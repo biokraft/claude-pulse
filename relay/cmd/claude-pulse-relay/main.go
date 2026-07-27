@@ -13,6 +13,7 @@ import (
 	"github.com/dinglebop/claude-pulse/relay/internal/config"
 	"github.com/dinglebop/claude-pulse/relay/internal/server"
 	"github.com/dinglebop/claude-pulse/relay/internal/store"
+	"github.com/dinglebop/claude-pulse/relay/internal/tunnel"
 )
 
 func main() {
@@ -55,7 +56,12 @@ func main() {
 	})
 
 	if !*noTunnel {
-		log.Println("tunnel: not yet implemented, run with --no-tunnel or wait for Task 10")
+		tn, err := tunnel.Start(cfg.Listen, cfg.Token, os.Stdout)
+		if err != nil {
+			log.Printf("tunnel disabled: %v", err)
+		} else {
+			defer tn.Stop()
+		}
 	}
 	log.Printf("listening on %s", cfg.Listen)
 	log.Fatal(http.ListenAndServe(cfg.Listen, h))

@@ -24,6 +24,8 @@ the paired phone.
 | Connectivity | Relay auto-spawns Cloudflare quick tunnel (embedded `cloudflared` spawn). Manual alternatives via `--no-tunnel --listen` documented. |
 | V1 scope | All 3 pages from the design handoff, including cost/tokens page (requires statusline hook ingest). |
 | Devices | System 7+ round-display devices only (paid-app requirement anyway): Fenix 7/8, Epix 2, FR 255/265/955/965, Venu 2/3, Vivoactive 5. |
+| Licensing | This repo (watch app + specs) stays **private/proprietary**. `relay/` is developed here but published to a separate public repo under **Apache-2.0** at release — it reads `~/.claude/.credentials.json`, so users need source auditability. Watch source is never published; sale protection comes from the store + trial flow. |
+| Naming | "Claude" is Anthropic's trademark — evaluate a rename before store submission (takedown risk on a paid listing). |
 
 ## Architecture
 
@@ -99,6 +101,8 @@ Data flow is pull-only from the watch, one consolidated request per cycle
 - Install: Homebrew formula + curl install script;
   `claude-pulse-relay service install` sets up launchd (macOS) / systemd
   (Linux).
+- License: Apache-2.0, mirrored to a public repo at release (private repo
+  is the source of truth during development).
 
 ## Testing
 

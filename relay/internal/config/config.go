@@ -1,0 +1,58 @@
+package config
+
+import (
+	"crypto/rand"
+	"encoding/hex"
+	"encoding/json"
+	"os"
+	"path/filepath"
+)
+
+type Config struct {
+	Token  string `json:"token"`
+	Listen string `json:"listen"`
+	DBPath string `json:"-"`
+	Dir    string `json:"-"`
+}
+
+func home() (string, error) {
+	if d := os.Getenv("CLAUDE_PULSE_HOME"); d != "" {
+		return d, nil
+	}
+	h, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(h, ".claude-pulse"), nil
+}
+
+func Load() (*Config, error) {
+	dir, err := home()
+	if err != nil {
+		return nil, err
+	}
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return nil, err
+	}
+	path := filepath.Join(dir, "config.json")
+	c := &Config{Listen: "127.0.0.1:8787"}
+	if b, err := os.ReadFile(path); err == nil {
+		if err := json.Unmarshal(b, c); err != nil {
+			return nil, err
+		}
+	}
+	if c.Token == "" {
+		raw := make([]byte, 16)
+		if _, err := rand.Read(raw); err != nil {
+			return nil, err
+		}
+		c.Token = hex.EncodeToString(raw)
+		b, _ := json.MarshalIndent(c, "", "  ")
+		if err := os.WriteFile(path, b, 0o600); err != nil {
+			return nil, err
+		}
+	}
+	c.Dir = dir
+	c.DBPath = filepath.Join(dir, "relay.db")
+	return c, nil
+}

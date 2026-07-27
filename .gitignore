@@ -1,0 +1,8 @@
+.DS_Store
+bin/
+dist/
+*.prg
+*.prg.debug.xml
+gen/
+developer_key*
+relay/claude-pulse-relay

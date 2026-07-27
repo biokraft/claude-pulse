@@ -1,3 +1,3 @@
 module github.com/dinglebop/claude-pulse/relay
 
-go 1.26.5
+go 1.22

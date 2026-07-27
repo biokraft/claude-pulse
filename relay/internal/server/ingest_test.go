@@ -46,3 +46,18 @@ func TestIngestRejectsBadJSON(t *testing.T) {
 		t.Fatalf("code %d", rr.Code)
 	}
 }
+
+func TestIngestReturns500OnStoreFailure(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "t.db")
+	st, _ := store.Open(dbPath)
+	h := IngestHandler(st, func() string { return "2026-07-27" })
+	st.Close()
+
+	// Post against closed store should return 500
+	req := httptest.NewRequest("POST", "/ingest/statusline", strings.NewReader(`{"session_id":"s1","cost":{"total_cost_usd":1.00},"context_window":{"input_tokens":600,"output_tokens":400}}`))
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+	if rr.Code != 500 {
+		t.Fatalf("code %d, want 500", rr.Code)
+	}
+}

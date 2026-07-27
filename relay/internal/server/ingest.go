@@ -42,12 +42,15 @@ func IngestHandler(st *store.Store, today func() string) http.Handler {
 		if dTok < 0 {
 			dTok = total
 		}
-		seen[p.SessionID] = sessionSeen{cost: p.Cost.TotalCostUSD, tokens: total}
-		mu.Unlock()
+		// Hold lock across AddCost to ensure seen is only advanced on success.
+		// Contention is negligible under single-user local daemon load.
 		if err := st.AddCost(today(), dCost, dTok); err != nil {
+			mu.Unlock()
 			http.Error(w, "store error", http.StatusInternalServerError)
 			return
 		}
+		seen[p.SessionID] = sessionSeen{cost: p.Cost.TotalCostUSD, tokens: total}
+		mu.Unlock()
 		w.WriteHeader(http.StatusNoContent)
 	})
 }

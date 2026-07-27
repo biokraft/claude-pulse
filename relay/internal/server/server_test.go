@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"net/http"
 	"net/http/httptest"
 	"path/filepath"
 	"testing"
@@ -65,5 +66,34 @@ func TestSnapshotPayload(t *testing.T) {
 	}
 	if len(got["daily"].([]any)) != 7 {
 		t.Fatal("daily len")
+	}
+}
+
+func TestEmptyTokenConfigRejects(t *testing.T) {
+	st, _ := store.Open(filepath.Join(t.TempDir(), "t.db"))
+	t.Cleanup(func() { st.Close() })
+	fetched := time.Date(2026, 7, 27, 10, 0, 0, 0, time.UTC)
+	h := New("", st, Providers{
+		Usage: func(now time.Time) (anthropic.Usage, time.Time, bool) {
+			return anthropic.Usage{}, fetched, false
+		},
+		Activity: func() (bool, int) { return false, 0 },
+		Daily:    func() ([]store.DayTotal, error) { return nil, nil },
+	})
+	srv := httptest.NewServer(h)
+	t.Cleanup(srv.Close)
+	resp, _ := srv.Client().Get(srv.URL + "/api/v1/snapshot")
+	if resp.StatusCode != 401 {
+		t.Fatalf("empty token config: code %d, want 401", resp.StatusCode)
+	}
+}
+
+func TestBearerHeaderStrictParsing(t *testing.T) {
+	srv := testHandler(t)
+	req, _ := http.NewRequest("GET", srv.URL+"/api/v1/snapshot", nil)
+	req.Header.Set("Authorization", "sekret")
+	resp, _ := srv.Client().Do(req)
+	if resp.StatusCode != 401 {
+		t.Fatalf("non-Bearer header: code %d, want 401", resp.StatusCode)
 	}
 }

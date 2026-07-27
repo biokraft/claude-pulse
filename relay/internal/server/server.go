@@ -3,6 +3,7 @@ package server
 import (
 	"crypto/subtle"
 	"encoding/json"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -18,9 +19,15 @@ type Providers struct {
 }
 
 func authorized(r *http.Request, token string) bool {
+	if token == "" {
+		return false
+	}
 	got := r.URL.Query().Get("token")
 	if got == "" {
-		got = strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+		auth := r.Header.Get("Authorization")
+		if strings.HasPrefix(auth, "Bearer ") {
+			got = strings.TrimPrefix(auth, "Bearer ")
+		}
 	}
 	return subtle.ConstantTimeCompare([]byte(got), []byte(token)) == 1
 }
@@ -52,7 +59,7 @@ func New(token string, st *store.Store, p Providers) http.Handler {
 			today = daily[len(daily)-1]
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{
+		if err := json.NewEncoder(w).Encode(map[string]any{
 			"five_hour_pct":       u.FiveHourPct,
 			"seven_day_pct":       u.SevenDayPct,
 			"five_hour_resets_at": u.FiveHourResetsAt.UTC().Format(time.RFC3339),
@@ -64,7 +71,10 @@ func New(token string, st *store.Store, p Providers) http.Handler {
 			"daily":               daily,
 			"fetched_at":          fetched.UTC().Format(time.RFC3339),
 			"stale":               stale,
-		})
+		}); err != nil {
+			// Headers already sent; only option is to log.
+			log.Printf("snapshot encode: %v", err)
+		}
 	})))
 	return mux
 }

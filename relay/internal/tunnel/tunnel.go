@@ -72,5 +72,8 @@ func Start(localAddr string, token string, out io.Writer) (*Tunnel, error) {
 func (t *Tunnel) Stop() {
 	if t.cmd != nil && t.cmd.Process != nil {
 		t.cmd.Process.Kill()
+		// Reap in background (fire-and-forget) so the killed cloudflared
+		// process doesn't linger as a zombie for the life of the relay.
+		go t.cmd.Wait()
 	}
 }

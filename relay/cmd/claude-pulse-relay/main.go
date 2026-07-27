@@ -1,14 +1,17 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"runtime"
+	"syscall"
 	"time"
 
 	"github.com/dinglebop/claude-pulse/relay/internal/activity"
@@ -51,7 +54,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer st.Close()
 
 	poller := anthropic.NewUsagePoller(*base, func() (anthropic.Credentials, error) {
 		return anthropic.LoadCredentials()
@@ -71,16 +73,48 @@ func main() {
 		},
 	})
 
+	var tn *tunnel.Tunnel
 	if !*noTunnel {
-		tn, err := tunnel.Start(cfg.Listen, cfg.Token, os.Stdout)
+		tn, err = tunnel.Start(cfg.Listen, cfg.Token, os.Stdout)
 		if err != nil {
 			log.Printf("tunnel disabled: %v", err)
-		} else {
-			defer tn.Stop()
+			tn = nil
 		}
 	}
-	log.Printf("listening on %s", cfg.Listen)
-	log.Fatal(http.ListenAndServe(cfg.Listen, h))
+
+	srv := &http.Server{Addr: cfg.Listen, Handler: h}
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+
+	serveErrCh := make(chan error, 1)
+	go func() {
+		log.Printf("listening on %s", cfg.Listen)
+		serveErrCh <- srv.ListenAndServe()
+	}()
+
+	exitCode := 0
+	select {
+	case <-sigCh:
+		log.Printf("shutting down")
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := srv.Shutdown(ctx); err != nil {
+			log.Printf("shutdown error: %v", err)
+			exitCode = 1
+		}
+	case err := <-serveErrCh:
+		if err != nil && err != http.ErrServerClosed {
+			log.Printf("server error: %v", err)
+			exitCode = 1
+		}
+	}
+
+	if tn != nil {
+		tn.Stop()
+	}
+	st.Close()
+	os.Exit(exitCode)
 }
 
 func servicePath() (string, error) {
@@ -169,7 +203,7 @@ func runHookCmd(args []string) {
 	}
 	settingsPath := filepath.Join(home, ".claude", "settings.json")
 
-	if err := hook.Install(settingsPath, cfg.Token); err != nil {
+	if err := hook.Install(settingsPath, cfg.Listen, cfg.Token); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}

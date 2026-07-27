@@ -12,7 +12,7 @@ func TestInstallCreatesSettingsFileWhenMissing(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "settings.json")
 
-	if err := Install(path, "sekret"); err != nil {
+	if err := Install(path, "127.0.0.1:8787", "sekret"); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 
@@ -38,6 +38,9 @@ func TestInstallCreatesSettingsFileWhenMissing(t *testing.T) {
 	if !strings.Contains(cmd, "127.0.0.1:8787/ingest/statusline") {
 		t.Fatalf("command missing endpoint: %q", cmd)
 	}
+	if strings.Contains(cmd, ">(") {
+		t.Fatalf("command contains bash process substitution: %q", cmd)
+	}
 }
 
 func TestInstallMergesIntoExistingSettings(t *testing.T) {
@@ -47,7 +50,7 @@ func TestInstallMergesIntoExistingSettings(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := Install(path, "tok"); err != nil {
+	if err := Install(path, "127.0.0.1:8787", "tok"); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 
@@ -72,7 +75,7 @@ func TestInstallRefusesWhenStatusLineExists(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err := Install(path, "tok")
+	err := Install(path, "127.0.0.1:8787", "tok")
 	if err == nil {
 		t.Fatalf("expected error when statusLine already present")
 	}
@@ -84,8 +87,25 @@ func TestInstallRefusesWhenStatusLineExists(t *testing.T) {
 }
 
 func TestFragmentContainsToken(t *testing.T) {
-	f := Fragment("tok123")
+	f := Fragment("127.0.0.1:8787", "tok123")
 	if !strings.Contains(f, "tok123") {
 		t.Fatalf("fragment missing token: %s", f)
+	}
+}
+
+func TestFragmentUsesListenAddr(t *testing.T) {
+	f := Fragment("0.0.0.0:9999", "tok123")
+	if !strings.Contains(f, "0.0.0.0:9999") {
+		t.Fatalf("fragment missing listen addr: %s", f)
+	}
+	if strings.Contains(f, "127.0.0.1:8787") {
+		t.Fatalf("fragment contains hardcoded default addr: %s", f)
+	}
+}
+
+func TestFragmentIsPOSIXSafe(t *testing.T) {
+	f := Fragment("127.0.0.1:8787", "tok123")
+	if strings.Contains(f, ">(") {
+		t.Fatalf("fragment uses bash process substitution: %s", f)
 	}
 }

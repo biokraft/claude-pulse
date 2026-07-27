@@ -25,7 +25,7 @@ the paired phone.
 | V1 scope | All 3 pages from the design handoff, including cost/tokens page (requires statusline hook ingest). |
 | Devices | System 7+ round-display devices only (paid-app requirement anyway): Fenix 7/8, Epix 2, FR 255/265/955/965, Venu 2/3, Vivoactive 5. |
 | Licensing | This repo (watch app + specs) stays **private/proprietary**. `relay/` is developed here but published to a separate public repo under **Apache-2.0** at release — it reads `~/.claude/.credentials.json`, so users need source auditability. Watch source is never published; sale protection comes from the store + trial flow. |
-| Naming | "Claude" is Anthropic's trademark — evaluate a rename before store submission (takedown risk on a paid listing). |
+| Naming | Keep "Claude Pulse" during development. CLAUDE is a registered US mark and Anthropic enforces sound-alikes ("Clawdbot" → forced rename, Jan 2026), so **before store submission**: request permission from marketing@anthropic.com, else rename + redesign mascot. Full analysis: `docs/ip-trademark-findings.md`. |
 
 ## Architecture
 

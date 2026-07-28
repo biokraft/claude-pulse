@@ -123,3 +123,31 @@ func TestCurrentWhilePollInFlight(t *testing.T) {
 		t.Fatalf("Poll did not complete; got %+v", u)
 	}
 }
+
+func TestPollNon429ErrorResetsBackoff(t *testing.T) {
+	// Server returns: 429, 500, 429. After the 500, escalation must
+	// restart from baseInterval, so the final 429 yields 10 min, not 20.
+	codes := []int{429, 500, 429}
+	i := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(codes[i])
+		i++
+	}))
+	defer srv.Close()
+
+	p := NewUsagePoller(srv.URL, fixedCreds)
+	t0 := time.Date(2026, 7, 27, 10, 0, 0, 0, time.UTC)
+	p.Poll(t0) // 429 → interval 10m, nextDue t0+10m
+	p.Poll(t0.Add(11 * time.Minute)) // 500 → interval resets to 5m
+	t2 := t0.Add(17 * time.Minute)
+	p.Poll(t2) // 429 → interval 10m (5m*2), NOT 20m
+
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.interval != 10*time.Minute {
+		t.Fatalf("interval = %v, want 10m (escalation must restart after non-429 error)", p.interval)
+	}
+	if !p.nextDue.Equal(t2.Add(10 * time.Minute)) {
+		t.Fatalf("nextDue = %v, want %v", p.nextDue, t2.Add(10*time.Minute))
+	}
+}

@@ -7,7 +7,7 @@ import "fmt"
 
 // PlistContent returns a launchd plist that runs execPath at load and
 // keeps it alive.
-func PlistContent(execPath string) string {
+func PlistContent(execPath, logPath string) string {
 	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
@@ -15,8 +15,10 @@ func PlistContent(execPath string) string {
   <key>ProgramArguments</key><array><string>%s</string></array>
   <key>RunAtLoad</key><true/>
   <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>%s</string>
+  <key>StandardErrorPath</key><string>%s</string>
 </dict></plist>
-`, execPath)
+`, execPath, logPath, logPath)
 }
 
 // UnitContent returns a systemd user unit that runs execPath, restarting

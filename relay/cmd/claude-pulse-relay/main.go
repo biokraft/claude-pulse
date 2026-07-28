@@ -160,6 +160,18 @@ func runServiceCmd(args []string) {
 		} else {
 			content = service.UnitContent(exePath)
 		}
+
+		// Best-effort stop of any existing instance so install is idempotent.
+		if _, err := os.Stat(path); err == nil {
+			var stop *exec.Cmd
+			if runtime.GOOS == "darwin" {
+				stop = exec.Command("launchctl", "unload", path)
+			} else {
+				stop = exec.Command("systemctl", "--user", "disable", "--now", "claude-pulse-relay")
+			}
+			stop.Run() // ignore errors: not loaded is fine
+		}
+
 		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 			log.Fatal(err)
 		}

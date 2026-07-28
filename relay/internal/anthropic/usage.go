@@ -57,6 +57,7 @@ func (p *UsagePoller) Poll(now time.Time) {
 	c, err := p.creds()
 	if err != nil {
 		p.mu.Lock()
+		p.interval = baseInterval
 		p.nextDue = now.Add(baseInterval)
 		p.mu.Unlock()
 		return
@@ -66,6 +67,7 @@ func (p *UsagePoller) Poll(now time.Time) {
 	resp, err := p.client.Do(req)
 	if err != nil {
 		p.mu.Lock()
+		p.interval = baseInterval
 		p.nextDue = now.Add(baseInterval)
 		p.mu.Unlock()
 		return
@@ -85,6 +87,7 @@ func (p *UsagePoller) Poll(now time.Time) {
 	}
 	if resp.StatusCode != http.StatusOK {
 		p.mu.Lock()
+		p.interval = baseInterval
 		p.nextDue = now.Add(baseInterval)
 		p.mu.Unlock()
 		return
@@ -102,6 +105,7 @@ func (p *UsagePoller) Poll(now time.Time) {
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
 		p.mu.Lock()
+		p.interval = baseInterval
 		p.nextDue = now.Add(baseInterval)
 		p.mu.Unlock()
 		return

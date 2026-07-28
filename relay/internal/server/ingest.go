@@ -4,16 +4,20 @@ import (
 	"encoding/json"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/dinglebop/claude-pulse/relay/internal/store"
 )
 
+const seenTTL = 24 * time.Hour
+
 type sessionSeen struct {
 	cost   float64
 	tokens int64
+	last   time.Time
 }
 
-func IngestHandler(st *store.Store, today func() string) http.Handler {
+func IngestHandler(st *store.Store, today func() string, now func() time.Time) http.Handler {
 	var mu sync.Mutex
 	seen := map[string]sessionSeen{}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -49,7 +53,13 @@ func IngestHandler(st *store.Store, today func() string) http.Handler {
 			http.Error(w, "store error", http.StatusInternalServerError)
 			return
 		}
-		seen[p.SessionID] = sessionSeen{cost: p.Cost.TotalCostUSD, tokens: total}
+		t := now()
+		seen[p.SessionID] = sessionSeen{cost: p.Cost.TotalCostUSD, tokens: total, last: t}
+		for id, s := range seen {
+			if t.Sub(s.last) > seenTTL {
+				delete(seen, id)
+			}
+		}
 		mu.Unlock()
 		w.WriteHeader(http.StatusNoContent)
 	})

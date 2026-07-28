@@ -45,7 +45,7 @@ func New(token string, st *store.Store, p Providers) http.Handler {
 	}
 	mux.Handle("POST /ingest/statusline", guard(IngestHandler(st, func() string {
 		return time.Now().UTC().Format("2006-01-02")
-	})))
+	}, time.Now)))
 	mux.Handle("GET /api/v1/snapshot", guard(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		u, fetched, stale := p.Usage(time.Now())
 		active, n := p.Activity()

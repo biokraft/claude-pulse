@@ -148,9 +148,15 @@ func runServiceCmd(args []string) {
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 			log.Fatal(err)
 		}
+		pulseHome, err := config.Home()
+		if err != nil {
+			log.Fatal(err)
+		}
+		logPath := filepath.Join(pulseHome, "relay.log")
+
 		var content string
 		if runtime.GOOS == "darwin" {
-			content = service.PlistContent(exePath)
+			content = service.PlistContent(exePath, logPath)
 		} else {
 			content = service.UnitContent(exePath)
 		}
@@ -167,6 +173,11 @@ func runServiceCmd(args []string) {
 			log.Fatalf("failed to load service: %v\n%s", err, out)
 		}
 		fmt.Printf("installed and started service: %s\n", path)
+		if runtime.GOOS == "darwin" {
+			fmt.Printf("pairing QR + URL will appear in: %s\n   view with: tail -f %s\n", logPath, logPath)
+		} else {
+			fmt.Println("pairing QR + URL: journalctl --user -u claude-pulse-relay -f")
+		}
 	case "uninstall":
 		var cmd *exec.Cmd
 		if runtime.GOOS == "darwin" {

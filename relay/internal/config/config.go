@@ -15,7 +15,9 @@ type Config struct {
 	Dir    string `json:"-"`
 }
 
-func home() (string, error) {
+// Home returns the claude-pulse home directory: $CLAUDE_PULSE_HOME if set,
+// otherwise ~/.claude-pulse.
+func Home() (string, error) {
 	if d := os.Getenv("CLAUDE_PULSE_HOME"); d != "" {
 		return d, nil
 	}
@@ -27,7 +29,7 @@ func home() (string, error) {
 }
 
 func Load() (*Config, error) {
-	dir, err := home()
+	dir, err := Home()
 	if err != nil {
 		return nil, err
 	}

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -164,4 +165,14 @@ func contains(s, substr string) bool {
 		}
 	}
 	return false
+}
+
+func TestRunSecurityWrapsStderr(t *testing.T) {
+	_, err := runSecurity("sh", "-c", `echo "The specified item could not be found in the keychain." >&2; exit 44`)
+	if err == nil {
+		t.Fatal("want error")
+	}
+	if !strings.Contains(err.Error(), "could not be found in the keychain") {
+		t.Fatalf("error missing stderr detail: %v", err)
+	}
 }

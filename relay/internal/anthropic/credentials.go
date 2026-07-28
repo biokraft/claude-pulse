@@ -2,17 +2,31 @@ package anthropic
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 )
 
 type Credentials struct {
 	AccessToken string
 	ExpiresAt   time.Time
+}
+
+func runSecurity(name string, args ...string) ([]byte, error) {
+	out, err := exec.Command(name, args...).Output()
+	if err != nil {
+		var ee *exec.ExitError
+		if errors.As(err, &ee) && len(ee.Stderr) > 0 {
+			return nil, fmt.Errorf("%w: %s", err, strings.TrimSpace(string(ee.Stderr)))
+		}
+		return nil, err
+	}
+	return out, nil
 }
 
 func DefaultCredentialsPath() string {
@@ -72,7 +86,5 @@ func loadCredentials(path string, goos string, run func(name string, args ...str
 }
 
 func LoadCredentials() (Credentials, error) {
-	return loadCredentials(DefaultCredentialsPath(), runtime.GOOS, func(name string, args ...string) ([]byte, error) {
-		return exec.Command(name, args...).Output()
-	})
+	return loadCredentials(DefaultCredentialsPath(), runtime.GOOS, runSecurity)
 }

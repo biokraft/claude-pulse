@@ -31,7 +31,7 @@ class GlanceView extends WatchUi.GlanceView {
             if (sevenColor != accent) { color = sevenColor; }
         }
 
-        if (Snap.isStale(stored, nowEpoch)) {
+        if (stored != null && Snap.isStale(stored, nowEpoch)) {
             line2 += "!";
             color = LT_GRAY;
         }

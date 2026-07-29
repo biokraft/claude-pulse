@@ -108,6 +108,9 @@ class DetailView extends WatchUi.View {
             label as String, pct as Number, resetsAt as Number, nowEpoch as Number, accent as Number,
             stale as Boolean, hasData as Boolean) as Void {
 
+        if (pct > 100) { pct = 100; }
+        if (pct < 0) { pct = 0; }
+
         var color = stale ? LT_GRAY : Snap.pctColor(pct, accent);
 
         dc.setColor(stale ? LT_GRAY : Graphics.COLOR_WHITE, Graphics.COLOR_BLACK);

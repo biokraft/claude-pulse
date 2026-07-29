@@ -73,6 +73,9 @@ class RingsView extends WatchUi.View {
     function drawRing(dc as Graphics.Dc, cx as Number, cy as Number, radius as Number,
         penWidth as Number, pct as Number, accent as Number, stale as Boolean, label as String) as Void {
 
+        if (pct > 100) { pct = 100; }
+        if (pct < 0) { pct = 0; }
+
         var trackColor = 0x333333;
         var valueColor = stale ? LT_GRAY : Snap.pctColor(pct, accent);
 

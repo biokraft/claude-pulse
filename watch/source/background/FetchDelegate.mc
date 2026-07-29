@@ -17,6 +17,9 @@ class FetchDelegate extends System.ServiceDelegate {
             Background.exit(null);
             return;
         }
+        while (url.length() > 0 && url.substring(url.length() - 1, url.length()).equals("/")) {
+            url = url.substring(0, url.length() - 1);
+        }
         Communications.makeWebRequest(
             url + "/api/v1/snapshot",
             {"token" => token},

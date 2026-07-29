@@ -23,12 +23,16 @@ class GlanceView extends WatchUi.GlanceView {
 
         if (stored != null) {
             var d = stored["d"] as Dictionary;
-            var fivePct = d["five_hour_pct"] as Number;
-            var sevenPct = d["seven_day_pct"] as Number;
-            line2 = fivePct.format("%d") + "% · " + sevenPct.format("%d") + "%";
-            color = Snap.pctColor(fivePct, accent);
-            var sevenColor = Snap.pctColor(sevenPct, accent);
-            if (sevenColor != accent) { color = sevenColor; }
+            var fivePct = (d != null) ? d["five_hour_pct"] : null;
+            var sevenPct = (d != null) ? d["seven_day_pct"] : null;
+            var fiveStr = (fivePct != null) ? (fivePct as Number).format("%d") + "%" : "--";
+            var sevenStr = (sevenPct != null) ? (sevenPct as Number).format("%d") + "%" : "--";
+            line2 = fiveStr + " · " + sevenStr;
+            if (fivePct != null) { color = Snap.pctColor(fivePct as Number, accent); }
+            if (sevenPct != null) {
+                var sevenColor = Snap.pctColor(sevenPct as Number, accent);
+                if (sevenColor != accent) { color = sevenColor; }
+            }
         }
 
         if (stored != null && Snap.isStale(stored, nowEpoch)) {

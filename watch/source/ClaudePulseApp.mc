@@ -15,7 +15,9 @@ class ClaudePulseApp extends Application.AppBase {
 
     function onSettingsChanged() as Void {
         registerTemporalEvent();
-        WatchUi.requestUpdate();
+        if (Toybox has :WatchUi) {
+            WatchUi.requestUpdate();
+        }
     }
 
     function registerTemporalEvent() as Void {

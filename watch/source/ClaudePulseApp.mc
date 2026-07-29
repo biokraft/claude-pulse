@@ -35,7 +35,7 @@ class ClaudePulseApp extends Application.AppBase {
     }
 
     function getInitialView() as [Views] or [Views, InputDelegates] {
-        return [new GlanceView()]; // replaced by page carousel in Task 8
+        return [new RingsView(), new PageDelegate(0)];
     }
 
     (:glance)

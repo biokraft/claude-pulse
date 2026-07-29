@@ -10,3 +10,17 @@ jobs:
         with: { go-version: "1.25" }
       - run: go vet ./...
       - run: go test ./...
+
+  watch:
+    runs-on: ubuntu-latest
+    container: ghcr.io/matco/connectiq-tester@sha256:7a6f586cb0e0393ff288da09cf27b6dad40a0058a346c529b99fd0fc19858f0f
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate throwaway dev key
+        run: |
+          openssl genrsa -out /tmp/key.pem 4096
+          openssl pkcs8 -topk8 -inform PEM -outform DER -in /tmp/key.pem -out /tmp/key.der -nocrypt
+      - name: Compile unit tests
+        run: monkeyc -f watch/monkey.jungle -d fr965 -o /tmp/cp-test.prg -y /tmp/key.der --unit-test
+      - name: Run unit tests
+        run: xvfb-run monkeydo /tmp/cp-test.prg fr965 -t

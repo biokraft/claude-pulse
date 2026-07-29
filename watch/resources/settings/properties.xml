@@ -1,0 +1,5 @@
+<properties>
+    <property id="relayUrl" type="string"></property>
+    <property id="relayToken" type="string"></property>
+    <property id="accentColor" type="number">13400662</property>
+</properties>

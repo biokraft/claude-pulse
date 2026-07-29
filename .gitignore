@@ -5,4 +5,5 @@ dist/
 *.prg.debug.xml
 gen/
 developer_key*
+*.pem
 relay/claude-pulse-relay

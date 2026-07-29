@@ -3,6 +3,7 @@ import Toybox.Application;
 import Toybox.Time;
 import Toybox.Time.Gregorian;
 
+(:glance,:background)
 module Snap {
     const STALE_SECS = 900;
     const WARN_PCT = 85;

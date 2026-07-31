@@ -77,12 +77,14 @@ class DetailView extends WatchUi.View {
         var poseColor = stale ? LT_GRAY : (pose == :annoyed ? Snap.WARN_COLOR : accent);
 
         var fh = dc.getFontHeight(Graphics.FONT_XTINY);
-        var spriteSize = 96;
-        var pad = (6 * scale).toNumber();
+        var spriteSize = (w * 0.24).toNumber();
+        var pad = (3 * scale).toNumber();
 
-        // Vertical flow from a round-screen-safe top margin.
-        var y = (h * 0.10).toNumber();
-        dc.drawBitmap(w / 2 - spriteSize / 2, y, WatchUi.loadResource(spriteForPose(pose)));
+        // Anchor near the round-screen-safe top margin instead of centering
+        // the stack — centering left too much dead space above the sprite.
+        var y = (h * 0.02).toNumber();
+
+        dc.drawScaledBitmap(w / 2 - spriteSize / 2, y, spriteSize, spriteSize, WatchUi.loadResource(spriteForPose(pose)));
         y += spriteSize + pad;
 
         dc.setColor(poseColor, Graphics.COLOR_BLACK);
@@ -91,11 +93,11 @@ class DetailView extends WatchUi.View {
 
         var jobsText = activeCount.format("%d") + (activeCount == 1 ? " job running" : " jobs running");
         dc.drawText(w / 2, y, Graphics.FONT_XTINY, jobsText, Graphics.TEXT_JUSTIFY_CENTER);
-        y += fh + pad * 2;
+        y += fh + pad;
 
         var rowWidth = (w * 0.60).toNumber();
         var rowX = w / 2 - rowWidth / 2;
-        var rowHeight = fh + (10 * scale).toNumber() + fh + pad;
+        var rowHeight = fh + (7 * scale).toNumber() + fh;
         var row1Y = y;
         var row2Y = row1Y + rowHeight + pad;
 

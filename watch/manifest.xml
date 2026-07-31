@@ -5,6 +5,7 @@
       minApiLevel="5.0.0">
     <iq:products>
       <iq:product id="fenix8solar47mm"/>
+      <iq:product id="fr57047mm"/>
       <iq:product id="fr965"/>
       <iq:product id="venu3"/>
     </iq:products>

@@ -41,16 +41,24 @@ class CostView extends WatchUi.View {
         var color = stale ? LT_GRAY : Graphics.COLOR_WHITE;
 
         dc.setColor(LT_GRAY, Graphics.COLOR_BLACK);
-        dc.drawText(w / 2, (10 * scale).toNumber(), Graphics.FONT_XTINY, "TODAY'S COST",
+        dc.drawText(w / 2, (h * 0.10).toNumber(), Graphics.FONT_XTINY, "TODAY'S COST",
             Graphics.TEXT_JUSTIFY_CENTER);
 
-        var costText = hasData ? "$" + costUsd.format("%.2f") : "$--";
-        var costY = (44 * scale).toNumber();
+        // Number fonts on many devices only carry digits and a few symbols, so
+        // the "$" prefix is drawn separately in a text font next to the figure.
+        var numText = hasData ? costUsd.format("%.2f") : "--";
+        var numW = dc.getTextWidthInPixels(numText, Graphics.FONT_NUMBER_MEDIUM);
+        var dollarW = dc.getTextWidthInPixels("$", Graphics.FONT_MEDIUM);
+        var costCenterY = (h * 0.34).toNumber();
+        var startX = w / 2 - (numW + dollarW) / 2;
         dc.setColor(color, Graphics.COLOR_BLACK);
-        dc.drawText(w / 2, costY, Graphics.FONT_NUMBER_MEDIUM, costText, Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(startX, costCenterY, Graphics.FONT_MEDIUM, "$",
+            Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER);
+        dc.drawText(startX + dollarW, costCenterY, Graphics.FONT_NUMBER_MEDIUM, numText,
+            Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER);
 
         var captionText = hasData ? Chart.formatTokens(tokens) + " tokens" : "-- tokens";
-        var captionY = costY + (46 * scale).toNumber();
+        var captionY = costCenterY + dc.getFontHeight(Graphics.FONT_NUMBER_MEDIUM) / 2 + (4 * scale).toNumber();
         dc.setColor(LT_GRAY, Graphics.COLOR_BLACK);
         dc.drawText(w / 2, captionY, Graphics.FONT_XTINY, captionText, Graphics.TEXT_JUSTIFY_CENTER);
 
@@ -61,7 +69,7 @@ class CostView extends WatchUi.View {
         if (hasData && stale) {
             var mins = Snap.ageMinutes(stored, nowEpoch);
             dc.setColor(LT_GRAY, Graphics.COLOR_BLACK);
-            dc.drawText(w / 2, h - (16 * scale).toNumber(), Graphics.FONT_XTINY,
+            dc.drawText(w / 2, h - (h * 0.13).toNumber(), Graphics.FONT_XTINY,
                 "synced " + mins + "m ago", Graphics.TEXT_JUSTIFY_CENTER);
         }
     }
@@ -78,7 +86,7 @@ class CostView extends WatchUi.View {
         var n = daily.size();
         var totalW = n * barW + (n - 1) * gap;
         var startX = w / 2 - totalW / 2;
-        var baseY = h - (30 * scale).toNumber();
+        var baseY = h - (h * 0.18).toNumber();
 
         var heights = Chart.barHeights(daily, maxPx);
 

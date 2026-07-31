@@ -7,12 +7,12 @@ import Toybox.Application.Properties;
 class RingsView extends WatchUi.View {
     function initialize() { View.initialize(); }
 
-    // Pure layout helper: outer ring 104px (radius 52) at 400px reference,
-    // ring separation 28px at 400px reference. Scales with width w.
+    // Pure layout helper: outer ring 140px (radius 70) at 400px reference,
+    // ring separation 32px at 400px reference. Scales with width w.
     static function ringGeometry(w as Number) as Dictionary {
         var scale = w / 400.0;
-        var radius = (52 * scale).toNumber();
-        var halfGap = (14 * scale).toNumber();
+        var radius = (70 * scale).toNumber();
+        var halfGap = (16 * scale).toNumber();
         var y = (w / 2).toNumber();
         var cx = y;
         return {
@@ -35,7 +35,7 @@ class RingsView extends WatchUi.View {
         var stored = Snap.load();
 
         dc.setColor(LT_GRAY, Graphics.COLOR_BLACK);
-        dc.drawText(w / 2, (10 * w / 400.0).toNumber(), Graphics.FONT_XTINY, "CLAUDE USAGE",
+        dc.drawText(w / 2, (dc.getHeight() * 0.10).toNumber(), Graphics.FONT_XTINY, "CLAUDE USAGE",
             Graphics.TEXT_JUSTIFY_CENTER);
 
         var fivePct = 0;
@@ -65,7 +65,7 @@ class RingsView extends WatchUi.View {
         if (stored != null && stale) {
             var mins = Snap.ageMinutes(stored, nowEpoch);
             dc.setColor(LT_GRAY, Graphics.COLOR_BLACK);
-            dc.drawText(w / 2, dc.getHeight() - (24 * w / 400.0).toNumber(), Graphics.FONT_XTINY,
+            dc.drawText(w / 2, dc.getHeight() - (dc.getHeight() * 0.16).toNumber(), Graphics.FONT_XTINY,
                 "synced " + mins + "m ago", Graphics.TEXT_JUSTIFY_CENTER);
         }
     }

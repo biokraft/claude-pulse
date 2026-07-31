@@ -76,22 +76,28 @@ class DetailView extends WatchUi.View {
 
         var poseColor = stale ? LT_GRAY : (pose == :annoyed ? Snap.WARN_COLOR : accent);
 
-        var cy = (52 * scale).toNumber();
-        var spriteSize = (52 * scale).toNumber();
-        dc.drawBitmap(w / 2 - spriteSize / 2, cy - spriteSize / 2, WatchUi.loadResource(spriteForPose(pose)));
+        var fh = dc.getFontHeight(Graphics.FONT_XTINY);
+        var spriteSize = 96;
+        var pad = (6 * scale).toNumber();
 
-        var labelY = cy + spriteSize / 2 + (4 * scale).toNumber();
+        // Vertical flow from a round-screen-safe top margin.
+        var y = (h * 0.10).toNumber();
+        dc.drawBitmap(w / 2 - spriteSize / 2, y, WatchUi.loadResource(spriteForPose(pose)));
+        y += spriteSize + pad;
+
         dc.setColor(poseColor, Graphics.COLOR_BLACK);
-        dc.drawText(w / 2, labelY, Graphics.FONT_XTINY, labelForPose(pose), Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(w / 2, y, Graphics.FONT_XTINY, labelForPose(pose), Graphics.TEXT_JUSTIFY_CENTER);
+        y += fh;
 
-        var jobsY = labelY + (18 * scale).toNumber();
         var jobsText = activeCount.format("%d") + (activeCount == 1 ? " job running" : " jobs running");
-        dc.drawText(w / 2, jobsY, Graphics.FONT_XTINY, jobsText, Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(w / 2, y, Graphics.FONT_XTINY, jobsText, Graphics.TEXT_JUSTIFY_CENTER);
+        y += fh + pad * 2;
 
-        var rowWidth = (w * 0.65).toNumber();
+        var rowWidth = (w * 0.60).toNumber();
         var rowX = w / 2 - rowWidth / 2;
-        var row1Y = jobsY + (28 * scale).toNumber();
-        var row2Y = row1Y + (46 * scale).toNumber();
+        var rowHeight = fh + (10 * scale).toNumber() + fh + pad;
+        var row1Y = y;
+        var row2Y = row1Y + rowHeight + pad;
 
         drawRow(dc, rowX, row1Y, rowWidth, scale, "5H", fivePct, fiveResetsAt, nowEpoch, accent, stale, hasData);
         drawRow(dc, rowX, row2Y, rowWidth, scale, "7D", sevenPct, sevenResetsAt, nowEpoch, accent, stale, hasData);
@@ -99,7 +105,7 @@ class DetailView extends WatchUi.View {
         if (hasData && stale) {
             var mins = Snap.ageMinutes(stored, nowEpoch);
             dc.setColor(LT_GRAY, Graphics.COLOR_BLACK);
-            dc.drawText(w / 2, h - (16 * scale).toNumber(), Graphics.FONT_XTINY,
+            dc.drawText(w / 2, h - (h * 0.13).toNumber(), Graphics.FONT_XTINY,
                 "synced " + mins + "m ago", Graphics.TEXT_JUSTIFY_CENTER);
         }
     }
@@ -118,7 +124,7 @@ class DetailView extends WatchUi.View {
         dc.setColor(color, Graphics.COLOR_BLACK);
         dc.drawText(x + rowWidth, y, Graphics.FONT_XTINY, pct.format("%d") + "%", Graphics.TEXT_JUSTIFY_RIGHT);
 
-        var barY = y + (16 * scale).toNumber();
+        var barY = y + dc.getFontHeight(Graphics.FONT_XTINY) + (2 * scale).toNumber();
         var barH = (6 * scale).toNumber();
         if (barH < 2) { barH = 2; }
         var barR = barH / 2;
@@ -132,7 +138,7 @@ class DetailView extends WatchUi.View {
             dc.fillRoundedRectangle(x, barY, fillW, barH, barR);
         }
 
-        var captionY = barY + barH + (4 * scale).toNumber();
+        var captionY = barY + barH + (2 * scale).toNumber();
         dc.setColor(LT_GRAY, Graphics.COLOR_BLACK);
         var caption = hasData ? "resets in " + Snap.countdown(resetsAt, nowEpoch) : "resets in --";
         dc.drawText(x + rowWidth / 2, captionY, Graphics.FONT_XTINY, caption, Graphics.TEXT_JUSTIFY_CENTER);

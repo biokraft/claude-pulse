@@ -28,7 +28,7 @@ SDK="$(ls -d "$HOME/Library/Application Support/Garmin/ConnectIQ/Sdks"/*/bin | t
 
 ## Design workflow
 
-The mockup in `design_handoff_garmin_claude_widget/Garmin Watch Claude Usage Tracker/Garmin Widget.dc.html`
+The mockup in `design/mockup.dc.html`
 is the source of truth for layout. It renders at a **400 px reference screen**, so every
 Monkey C view scales from `scale = dc.getWidth() / 400.0` and uses the mockup's own
 numbers (ring outer 104, sprite box 52, row block 260, gaps 8/12/14 …).
@@ -36,7 +36,7 @@ numbers (ring outer 104, sprite box 52, row block 260, gaps 8/12/14 …).
 Order of work when the design is off:
 
 1. Read the mockup HTML and write the measurements down in
-   `docs/superpowers/specs/` — one spec file per design pass. Do not eyeball from
+   `docs/design-spec.md`. Do not eyeball from
    screenshots; the HTML carries the exact px values and colours.
 2. Convert `oklch(...)` colours once into hex constants in `watch/source/views/Chrome.mc`
    and reuse them. Never re-derive palette values per view.
@@ -91,7 +91,7 @@ What it produces, and how:
   discs on the `#141312` background with the app name above. Built from the screen
   images, not the raw captures, so the framing always matches the listing.
 - **Cover image and both 128x128 icons** — copied unchanged from
-  `design_handoff_garmin_claude_widget/Garmin Watch Claude Usage Tracker/store-assets/`.
+  `design/store-assets/`.
 - **`ClaudePulse.iq`** — copied from the Desktop if the export is there.
 
 `FORM-ANSWERS.md` in that folder holds the copy for every field on the submission form;
@@ -110,7 +110,7 @@ $14.82, 2.1M tokens). It is a temporary dev aid: **remove the function and its c
 ## Store
 
 Submission needs the `.iq` export, the store assets under
-`design_handoff_garmin_claude_widget/Garmin Watch Claude Usage Tracker/store-assets/`,
+`design/store-assets/`,
 and `watch/manifest.xml`'s device list (current-gen smartwatches only — no Edge,
 handheld, or aviation products). Anthropic has not yet been asked for permission to use
 the Claude name and mascot; that is still open before the listing goes public.

@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dinglebop/claude-pulse/relay/internal/anthropic"
-	"github.com/dinglebop/claude-pulse/relay/internal/store"
+	"github.com/biokraft/claude-pulse/relay/internal/anthropic"
+	"github.com/biokraft/claude-pulse/relay/internal/store"
 )
 
 func testHandler(t *testing.T) *httptest.Server {

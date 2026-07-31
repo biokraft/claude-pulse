@@ -18,8 +18,7 @@ from PIL import Image, ImageDraw, ImageFont
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATIC = os.path.join(
     REPO,
-    "design_handoff_garmin_claude_widget",
-    "Garmin Watch Claude Usage Tracker",
+    "design",
     "store-assets",
 )
 

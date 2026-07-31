@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dinglebop/claude-pulse/relay/internal/store"
+	"github.com/biokraft/claude-pulse/relay/internal/store"
 )
 
 func TestIngestAccumulatesDeltas(t *testing.T) {

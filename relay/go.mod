@@ -1,4 +1,4 @@
-module github.com/dinglebop/claude-pulse/relay
+module github.com/biokraft/claude-pulse/relay
 
 go 1.25.0
 

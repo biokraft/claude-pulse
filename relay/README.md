@@ -26,7 +26,7 @@ claude-pulse-relay
 cd relay && go build -o claude-pulse-relay ./cmd/claude-pulse-relay
 
 # (placeholder, once published)
-brew install dinglebop/tap/claude-pulse-relay
+brew install biokraft/tap/claude-pulse-relay
 ```
 
 ## Quickstart
@@ -157,4 +157,4 @@ Usage data comes from an undocumented Anthropic endpoint
 
 ## License
 
-Apache-2.0. See [LICENSE](./LICENSE).
+MIT. See [LICENSE](../LICENSE) at the repository root.

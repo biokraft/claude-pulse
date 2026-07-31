@@ -14,14 +14,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/dinglebop/claude-pulse/relay/internal/activity"
-	"github.com/dinglebop/claude-pulse/relay/internal/anthropic"
-	"github.com/dinglebop/claude-pulse/relay/internal/config"
-	"github.com/dinglebop/claude-pulse/relay/internal/hook"
-	"github.com/dinglebop/claude-pulse/relay/internal/server"
-	"github.com/dinglebop/claude-pulse/relay/internal/service"
-	"github.com/dinglebop/claude-pulse/relay/internal/store"
-	"github.com/dinglebop/claude-pulse/relay/internal/tunnel"
+	"github.com/biokraft/claude-pulse/relay/internal/activity"
+	"github.com/biokraft/claude-pulse/relay/internal/anthropic"
+	"github.com/biokraft/claude-pulse/relay/internal/config"
+	"github.com/biokraft/claude-pulse/relay/internal/hook"
+	"github.com/biokraft/claude-pulse/relay/internal/server"
+	"github.com/biokraft/claude-pulse/relay/internal/service"
+	"github.com/biokraft/claude-pulse/relay/internal/store"
+	"github.com/biokraft/claude-pulse/relay/internal/tunnel"
 )
 
 func main() {

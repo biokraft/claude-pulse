@@ -1,6 +1,6 @@
 # Widget Design Conformance Spec
 
-Source of truth: `design_handoff_garmin_claude_widget/Garmin Watch Claude Usage Tracker/Garmin Widget.dc.html`.
+Source of truth: `design/mockup.dc.html`.
 All measurements are in the mockup's 400 px reference screen. On device, `scale = dc.getWidth() / 400.0`.
 
 ## Global Constraints

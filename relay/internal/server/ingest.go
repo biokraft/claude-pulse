@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dinglebop/claude-pulse/relay/internal/store"
+	"github.com/biokraft/claude-pulse/relay/internal/store"
 )
 
 const seenTTL = 24 * time.Hour

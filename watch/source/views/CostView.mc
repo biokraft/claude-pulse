@@ -38,18 +38,26 @@ class CostView extends WatchUi.View {
             stale = Snap.isStale(stored, nowEpoch);
         }
 
-        var color = stale ? LT_GRAY : Graphics.COLOR_WHITE;
+        var color = stale ? Chrome.DIM : Chrome.TEXT_PRIMARY;
 
-        dc.setColor(LT_GRAY, Graphics.COLOR_BLACK);
-        dc.drawText(w / 2, (h * 0.10).toNumber(), Graphics.FONT_XTINY, "TODAY'S COST",
-            Graphics.TEXT_JUSTIFY_CENTER);
+        // Centered column: title, cost figure, token caption, chart (gap 12 at 400px).
+        var fh = dc.getFontHeight(Graphics.FONT_XTINY);
+        var gap = (12 * scale).toNumber();
+        if (gap < 3) { gap = 3; }
+        var costH = dc.getFontHeight(Graphics.FONT_NUMBER_MEDIUM);
+        var chartH = (56 * scale).toNumber();
+        var total = fh + gap + costH + gap + fh + (8 * scale).toNumber() + chartH;
+        var top = (h - total) / 2;
+
+        dc.setColor(Chrome.MUTED, Graphics.COLOR_BLACK);
+        dc.drawText(w / 2, top, Graphics.FONT_XTINY, "TODAY'S COST", Graphics.TEXT_JUSTIFY_CENTER);
 
         // Number fonts on many devices only carry digits and a few symbols, so
         // the "$" prefix is drawn separately in a text font next to the figure.
         var numText = hasData ? costUsd.format("%.2f") : "--";
         var numW = dc.getTextWidthInPixels(numText, Graphics.FONT_NUMBER_MEDIUM);
         var dollarW = dc.getTextWidthInPixels("$", Graphics.FONT_MEDIUM);
-        var costCenterY = (h * 0.34).toNumber();
+        var costCenterY = top + fh + gap + costH / 2;
         var startX = w / 2 - (numW + dollarW) / 2;
         dc.setColor(color, Graphics.COLOR_BLACK);
         dc.drawText(startX, costCenterY, Graphics.FONT_MEDIUM, "$",
@@ -58,23 +66,26 @@ class CostView extends WatchUi.View {
             Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER);
 
         var captionText = hasData ? Chart.formatTokens(tokens) + " tokens" : "-- tokens";
-        var captionY = costCenterY + dc.getFontHeight(Graphics.FONT_NUMBER_MEDIUM) / 2 + (4 * scale).toNumber();
-        dc.setColor(LT_GRAY, Graphics.COLOR_BLACK);
+        var captionY = top + fh + gap + costH + gap;
+        dc.setColor(Chrome.MUTED, Graphics.COLOR_BLACK);
         dc.drawText(w / 2, captionY, Graphics.FONT_XTINY, captionText, Graphics.TEXT_JUSTIFY_CENTER);
 
         if (daily.size() == 7) {
-            drawChart(dc, w, h, scale, daily, stale, accent);
+            drawChart(dc, w, top + total, scale, daily, stale, accent);
         }
 
         if (hasData && stale) {
             var mins = Snap.ageMinutes(stored, nowEpoch);
-            dc.setColor(LT_GRAY, Graphics.COLOR_BLACK);
-            dc.drawText(w / 2, h - (h * 0.13).toNumber(), Graphics.FONT_XTINY,
+            dc.setColor(Chrome.DIM, Graphics.COLOR_BLACK);
+            dc.drawText(w / 2, h - (44 * scale).toNumber() - fh, Graphics.FONT_XTINY,
                 "synced " + mins + "m ago", Graphics.TEXT_JUSTIFY_CENTER);
         }
+
+        Chrome.drawPageDots(dc, 2, accent);
     }
 
-    function drawChart(dc as Graphics.Dc, w as Number, h as Number, scale as Float,
+    // baseY is the chart baseline: bars grow upward from it.
+    function drawChart(dc as Graphics.Dc, w as Number, baseY as Number, scale as Float,
             daily as Array<Dictionary>, stale as Boolean, accent as Number) as Void {
 
         var maxPx = (56 * scale).toNumber();
@@ -86,7 +97,8 @@ class CostView extends WatchUi.View {
         var n = daily.size();
         var totalW = n * barW + (n - 1) * gap;
         var startX = w / 2 - totalW / 2;
-        var baseY = h - (h * 0.18).toNumber();
+        var radius = (3 * scale).toNumber();
+        if (radius < 1) { radius = 1; }
 
         var heights = Chart.barHeights(daily, maxPx);
 
@@ -94,14 +106,15 @@ class CostView extends WatchUi.View {
             var barH = heights[i];
             var x = startX + i * (barW + gap);
             var isToday = i == n - 1;
-            var barColor = stale ? LT_GRAY : (isToday ? accent : 0x555555);
-
-            dc.setColor(0x333333, Graphics.COLOR_BLACK);
-            dc.fillRectangle(x, baseY - maxPx, barW, maxPx);
+            var barColor = stale ? Chrome.DIM : (isToday ? accent : Chrome.BAR_IDLE);
 
             if (barH > 0) {
                 dc.setColor(barColor, Graphics.COLOR_BLACK);
-                dc.fillRectangle(x, baseY - barH, barW, barH);
+                // Rounded top corners only: rounded rect plus a square patch at the base.
+                dc.fillRoundedRectangle(x, baseY - barH, barW, barH, radius);
+                if (barH > radius) {
+                    dc.fillRectangle(x, baseY - radius, barW, radius);
+                }
             }
         }
     }

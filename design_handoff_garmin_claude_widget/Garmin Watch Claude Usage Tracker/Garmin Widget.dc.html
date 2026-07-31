@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<style>
+@keyframes pulseDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.65)}}
+body{margin:0}
+a{color:#CC7A56}
+a:hover{color:#E0946E}
+</style>
+</helmet>
+<div style="min-height:100vh;background:oklch(14% 0.004 60);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;padding:60px 20px;box-sizing:border-box">
+
+  <div style="position:relative;width:440px;height:440px" onPointerDown="{{ onPointerDown }}" onPointerMove="{{ onPointerMove }}" onPointerUp="{{ onPointerUp }}" onPointerLeave="{{ onPointerUp }}">
+
+    <div style="{{ bezelStyle }}"></div>
+
+    <div style="position:absolute;left:-15px;top:190px;width:14px;height:56px;border-radius:4px;background:oklch(28% 0 0);box-shadow:inset -1px 0 2px rgba(0,0,0,.5),1px 0 2px rgba(255,255,255,.05);cursor:pointer" onClick="{{ goHome }}"></div>
+    <div style="position:absolute;right:-15px;top:120px;width:14px;height:46px;border-radius:4px;background:oklch(28% 0 0);box-shadow:inset 1px 0 2px rgba(0,0,0,.5),-1px 0 2px rgba(255,255,255,.05);cursor:pointer" onClick="{{ prev }}"></div>
+    <div style="position:absolute;right:-15px;top:198px;width:14px;height:44px;border-radius:4px;background:{{ accentColor }};box-shadow:inset 1px 0 2px rgba(0,0,0,.3);cursor:pointer"></div>
+    <div style="position:absolute;right:-15px;top:274px;width:14px;height:46px;border-radius:4px;background:oklch(28% 0 0);box-shadow:inset 1px 0 2px rgba(0,0,0,.5),-1px 0 2px rgba(255,255,255,.05);cursor:pointer" onClick="{{ next }}"></div>
+
+    <div style="position:absolute;left:20px;top:20px;width:400px;height:400px;border-radius:50%;overflow:hidden;background:oklch(8% 0 0);box-shadow:inset 0 0 0 2px rgba(0,0,0,.6),inset 0 0 30px rgba(0,0,0,.6)">
+
+      <div style="{{ trackStyle }}">
+
+        <div style="flex:0 0 400px;height:400px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;box-sizing:border-box;padding:30px">
+          <div style="font-size:11px;letter-spacing:2px;color:oklch(65% 0.01 80);font-weight:600;text-transform:uppercase">Claude Usage</div>
+          <div style="display:flex;gap:28px;align-items:center">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+              <div style="width:104px;height:104px;border-radius:50%;background:{{ fiveHourRing }};display:flex;align-items:center;justify-content:center">
+                <div style="width:80px;height:80px;border-radius:50%;background:oklch(8% 0 0);display:flex;flex-direction:column;align-items:center;justify-content:center">
+                  <div style="font-size:22px;font-weight:700;color:oklch(97% 0.004 80)">{{ fiveHourPct }}%</div>
+                </div>
+              </div>
+              <div style="font-size:11px;color:oklch(60% 0.01 80);font-weight:600">5H</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+              <div style="width:104px;height:104px;border-radius:50%;background:{{ sevenDayRing }};display:flex;align-items:center;justify-content:center">
+                <div style="width:80px;height:80px;border-radius:50%;background:oklch(8% 0 0);display:flex;flex-direction:column;align-items:center;justify-content:center">
+                  <div style="font-size:22px;font-weight:700;color:oklch(97% 0.004 80)">{{ sevenDayPct }}%</div>
+                </div>
+              </div>
+              <div style="font-size:11px;color:oklch(60% 0.01 80);font-weight:600">7D</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
+            <div style="{{ activityDotStyle }}"></div>
+            <div style="font-size:12px;color:{{ activityColor }};font-weight:600">{{ activityLabel }}</div>
+          </div>
+        </div>
+
+        <div style="flex:0 0 400px;height:400px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;box-sizing:border-box;padding:22px">
+          <sc-if value="{{ mascotHasReal }}" hint-placeholder-val="{{ true }}">
+            <img src="sprites/clawd-idle-look.svg" style="width:52px;height:52px;image-rendering:pixelated" alt="clawd sprite" />
+          </sc-if>
+          <sc-if value="{{ mascotIsPlaceholder }}" hint-placeholder-val="{{ false }}">
+            <div style="{{ mascotPlaceholderStyle }}">
+              <div style="font:9px/1.3 ui-monospace,Menlo,monospace;color:oklch(70% 0.01 80);text-align:center;padding:0 6px">{{ mascotSpriteName }}</div>
+            </div>
+          </sc-if>
+          <div style="font-size:11px;font-weight:700;color:{{ mascotColor }}">{{ activeCount }} job{{ activeCountSuffix }} running</div>
+          <div style="display:flex;flex-direction:column;gap:14px;width:260px;margin-top:2px">
+            <div style="display:flex;align-items:center;gap:14px">
+              <div style="width:14px;height:14px;border-radius:3px;background:{{ fiveHourColor }};flex:none"></div>
+              <div style="flex:1">
+                <div style="display:flex;justify-content:space-between;font-size:13px;color:oklch(97% 0.004 80);font-weight:600"><span>5 hour</span><span>{{ fiveHourPct }}%</span></div>
+                <div style="height:6px;border-radius:3px;background:rgba(255,255,255,.08);margin-top:6px;overflow:hidden"><div style="{{ fiveHourBarStyle }}"></div></div>
+                <div style="font-size:11px;color:oklch(55% 0.01 80);margin-top:4px">resets in {{ fiveHourReset }}</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:14px">
+              <div style="width:14px;height:14px;border-radius:3px;background:{{ sevenDayColor }};flex:none"></div>
+              <div style="flex:1">
+                <div style="display:flex;justify-content:space-between;font-size:13px;color:oklch(97% 0.004 80);font-weight:600"><span>7 day</span><span>{{ sevenDayPct }}%</span></div>
+                <div style="height:6px;border-radius:3px;background:rgba(255,255,255,.08);margin-top:6px;overflow:hidden"><div style="{{ sevenDayBarStyle }}"></div></div>
+                <div style="font-size:11px;color:oklch(55% 0.01 80);margin-top:4px">resets in {{ sevenDayReset }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="flex:0 0 400px;height:400px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;box-sizing:border-box;padding:30px">
+          <div style="font-size:11px;letter-spacing:2px;color:oklch(65% 0.01 80);font-weight:600;text-transform:uppercase">Today's Cost</div>
+          <div style="font-size:38px;font-weight:700;color:oklch(97% 0.004 80)">${{ dailyCost }}</div>
+          <div style="font-size:13px;color:oklch(60% 0.01 80)">{{ dailyTokens }} tokens</div>
+          <div style="display:flex;align-items:flex-end;gap:6px;height:60px;margin-top:8px">
+            <sc-for list="{{ costHistory }}" as="d" hint-placeholder-count="7">
+              <div style="{{ d.barStyle }}"></div>
+            </sc-for>
+          </div>
+        </div>
+
+      </div>
+
+      <div style="position:absolute;bottom:20px;left:0;right:0;display:flex;justify-content:center;gap:7px">
+        <sc-for list="{{ dots }}" as="d" hint-placeholder-count="4">
+          <div style="{{ d.style }}" onClick="{{ d.onClick }}"></div>
+        </sc-for>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="font-size:13px;color:oklch(55% 0.01 80);text-align:center;max-width:320px;line-height:1.5">Drag the screen, or tap the side buttons, to browse the widget's pages.</div>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:560,&quot;height&quot;:600},&quot;accentColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#CC7A56&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#CC7A56&quot;,&quot;#5B8DEF&quot;,&quot;#6FBF73&quot;,&quot;#B36FD1&quot;]},&quot;simulateState&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;normal&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;normal&quot;,&quot;near_limit&quot;,&quot;idle&quot;],&quot;section&quot;:&quot;Demo state&quot;},&quot;bezelFinish&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;black&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;black&quot;,&quot;silver&quot;],&quot;section&quot;:&quot;Demo state&quot;},&quot;mascotPose&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;auto&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;auto&quot;,&quot;celebrate&quot;,&quot;annoyed&quot;,&quot;working&quot;,&quot;idle&quot;,&quot;sleeping&quot;],&quot;section&quot;:&quot;Companion (demo)&quot;}}">
+class Component extends DCLogic {
+  state = { page: 0, dragging: false, startX: 0, deltaX: 0 };
+  SCREEN = 400;
+  PAGES = 3;
+
+  goTo(i) { this.setState({ page: Math.max(0, Math.min(this.PAGES - 1, i)), deltaX: 0 }); }
+  next = () => this.goTo(this.state.page + 1);
+  prev = () => this.goTo(this.state.page - 1);
+  goHome = () => this.goTo(0);
+
+  onPointerDown = (e) => { this.setState({ dragging: true, startX: e.clientX, deltaX: 0 }); };
+  onPointerMove = (e) => {
+    if (!this.state.dragging) return;
+    let dx = e.clientX - this.state.startX;
+    dx = Math.max(-160, Math.min(160, dx));
+    this.setState({ deltaX: dx });
+  };
+  onPointerUp = () => {
+    const { deltaX, page } = this.state;
+    let next = page;
+    if (deltaX < -60) next = Math.min(this.PAGES - 1, page + 1);
+    else if (deltaX > 60) next = Math.max(0, page - 1);
+    this.setState({ dragging: false, deltaX: 0, page: next });
+  };
+
+  mascotInfo(scenario, active, size = 56) {
+    const override = this.props.mascotPose ?? 'auto';
+    const hour = new Date().getHours();
+    const isNight = hour >= 0 && hour < 6;
+    let pose = override;
+    if (pose === 'auto') {
+      if (isNight) pose = 'sleeping';
+      else if (scenario === 'near_limit') pose = 'annoyed';
+      else if (active) pose = 'working';
+      else pose = 'idle';
+    }
+    const table = {
+      celebrate: { label: 'Celebrating', sub: 'quota window just reset', sprite: 'clawd-happy.gif (+1 more variant)', color: (a) => a },
+      annoyed: { label: 'Annoyed', sub: 'quota running hot (\u226585%)', sprite: 'clawd-react-annoyed.gif', color: (a, w) => w },
+      working: { label: 'Working', sub: 'Claude session active', sprite: 'clawd-typing.gif (+6 more variants)', color: (a) => a },
+      idle: { label: 'Idle', sub: 'no active session', sprite: 'clawd-idle-look.svg', color: () => 'oklch(65% 0.01 80)' },
+      sleeping: { label: 'Sleeping', sub: '00:00\u201306:00 quiet hours', sprite: 'clawd-sleeping.gif', color: () => 'oklch(55% 0.01 80)' }
+    };
+    const m = table[pose];
+    const hasReal = pose === 'idle';
+    return {
+      hasReal,
+      spriteName: m.sprite,
+      label: m.label, sub: m.sub, color: m.color,
+      placeholderStyle: `width:${size}px;height:${size}px;border-radius:12px;background:repeating-linear-gradient(135deg,rgba(255,255,255,0.06),rgba(255,255,255,0.06) 8px,rgba(255,255,255,0.02) 8px,rgba(255,255,255,0.02) 16px);display:flex;align-items:center;justify-content:center;box-sizing:border-box`
+    };
+  }
+
+  renderVals() {
+    const accent = this.props.accentColor ?? '#CC7A56';
+    const bezel = this.props.bezelFinish ?? 'black';
+    const scenario = this.props.simulateState ?? 'normal';
+
+    let fiveHourPct, sevenDayPct, active, activeCount;
+    if (scenario === 'near_limit') { fiveHourPct = 92; sevenDayPct = 88; active = true; activeCount = 1; }
+    else if (scenario === 'idle') { fiveHourPct = 22; sevenDayPct = 15; active = false; activeCount = 0; }
+    else { fiveHourPct = 68; sevenDayPct = 42; active = true; activeCount = 2; }
+
+    const warnColor = 'oklch(62% 0.19 25)';
+    const fiveHourColor = fiveHourPct >= 85 ? warnColor : accent;
+    const sevenDayColor = sevenDayPct >= 85 ? warnColor : accent;
+    const track = 'rgba(255,255,255,0.08)';
+
+    const activityColor = active ? accent : 'oklch(55% 0.01 80)';
+    const activityLabel = active ? 'ACTIVE' : 'IDLE';
+
+    const bezelGradient = bezel === 'silver'
+      ? 'radial-gradient(circle at 35% 30%, oklch(78% 0 0), oklch(52% 0 0) 60%, oklch(38% 0 0) 100%)'
+      : 'radial-gradient(circle at 35% 30%, oklch(34% 0 0), oklch(20% 0 0) 60%, oklch(10% 0 0) 100%)';
+
+    const { page, dragging, deltaX } = this.state;
+    const baseOffset = -(page * this.SCREEN);
+    const totalOffset = baseOffset + (dragging ? deltaX : 0);
+
+    const history = [0.35, 0.5, 0.8, 0.45, 0.6, 1, scenario === 'idle' ? 0.15 : 0.7];
+    const costHistory = history.map((h, i) => ({
+      barStyle: `width:12px;height:${Math.round(h*56)}px;border-radius:3px 3px 0 0;background:${i===6?accent:'rgba(255,255,255,0.18)'}`
+    }));
+
+    const dots = Array.from({ length: this.PAGES }, (_, i) => ({
+      style: `width:6px;height:6px;border-radius:50%;cursor:pointer;background:${i===page?accent:'rgba(255,255,255,0.25)'}`,
+      onClick: () => this.goTo(i)
+    }));
+
+    return {
+      accentColor: accent,
+      bezelStyle: `position:absolute;inset:0;border-radius:50%;background:${bezelGradient};box-shadow:0 20px 50px rgba(0,0,0,.5),inset 0 0 0 1px rgba(255,255,255,.05)`,
+      trackStyle: `display:flex;height:100%;transform:translateX(${totalOffset}px);transition:${dragging?'none':'transform 0.35s cubic-bezier(.2,.8,.2,1)'}`,
+      fiveHourPct, sevenDayPct,
+      fiveHourColor, sevenDayColor,
+      fiveHourRing: `conic-gradient(${fiveHourColor} ${fiveHourPct}%, ${track} ${fiveHourPct}% 100%)`,
+      sevenDayRing: `conic-gradient(${sevenDayColor} ${sevenDayPct}%, ${track} ${sevenDayPct}% 100%)`,
+      fiveHourBarStyle: `width:${fiveHourPct}%;height:100%;border-radius:3px;background:${fiveHourColor}`,
+      sevenDayBarStyle: `width:${sevenDayPct}%;height:100%;border-radius:3px;background:${sevenDayColor}`,
+      fiveHourReset: scenario === 'near_limit' ? '38m' : '2h 14m',
+      sevenDayReset: scenario === 'near_limit' ? '1d 3h' : '4d 6h',
+      activityColor, activityLabel,
+      activityDotStyle: `width:9px;height:9px;border-radius:50%;background:${activityColor};${active?'animation:pulseDot 1.6s ease-in-out infinite':''}`,
+      activityBigDotStyle: `width:20px;height:20px;border-radius:50%;background:${activityColor};${active?'animation:pulseDot 1.6s ease-in-out infinite':''}`,
+      activeCount, activeCountSuffix: activeCount === 1 ? '' : 's',
+      lastChecked: 'just now',
+      dailyCost: scenario === 'idle' ? '2.10' : '14.82',
+      dailyTokens: scenario === 'idle' ? '310K' : '2.1M',
+      costHistory, dots,
+      mascotHasReal: this.mascotInfo(scenario, active).hasReal,
+      mascotIsPlaceholder: !this.mascotInfo(scenario, active).hasReal,
+      mascotSpriteName: this.mascotInfo(scenario, active).spriteName,
+      mascotPlaceholderStyle: this.mascotInfo(scenario, active).placeholderStyle,
+      mascotLabel: this.mascotInfo(scenario, active).label,
+      mascotSub: this.mascotInfo(scenario, active).sub,
+      mascotColor: this.mascotInfo(scenario, active).color(accent, warnColor),
+      onPointerDown: this.onPointerDown, onPointerMove: this.onPointerMove, onPointerUp: this.onPointerUp,
+      next: this.next, prev: this.prev, goHome: this.goHome
+    };
+  }
+}
+
+</script>
+</body>
+</html>

@@ -5,7 +5,8 @@ import Toybox.Time;
 import Toybox.Time.Gregorian;
 import Toybox.Application.Properties;
 
-// Page 2: mascot + active job count + per-window (5H/7D) quota rows.
+// Page 2: mascot + active job count + per-window quota rows. Geometry mirrors the
+// design mockup at its 400px reference size (sprite 52, 260-wide rows, gap 8/14).
 class DetailView extends WatchUi.View {
     function initialize() { View.initialize(); }
 
@@ -74,75 +75,95 @@ class DetailView extends WatchUi.View {
         var hourOfDay = info.hour;
         var pose = Pose.compute(fivePct, sevenPct, isActive, hourOfDay, inactiveSecs, 0, nowEpoch);
 
-        var poseColor = stale ? LT_GRAY : (pose == :annoyed ? Snap.WARN_COLOR : accent);
+        var poseColor = stale ? Chrome.DIM : (pose == :annoyed ? Snap.WARN_COLOR : accent);
 
         var fh = dc.getFontHeight(Graphics.FONT_XTINY);
-        var spriteSize = (w * 0.24).toNumber();
-        var pad = (3 * scale).toNumber();
+        // The mockup's 52px sprite box is filled edge to edge; the shipped art
+        // carries transparent padding, so the box is enlarged to match visually.
+        var spriteSize = (72 * scale).toNumber();
+        var gap = (8 * scale).toNumber();
+        if (gap < 2) { gap = 2; }
 
-        // Anchor near the round-screen-safe top margin instead of centering
-        // the stack — centering left too much dead space above the sprite.
-        var y = (h * 0.02).toNumber();
+        var rowHeight = fh + (6 * scale).toNumber() + (6 * scale).toNumber() + (4 * scale).toNumber() + fh;
+        var rowGap = (14 * scale).toNumber();
+        var rowsH = rowHeight * 2 + rowGap;
 
-        dc.drawScaledBitmap(w / 2 - spriteSize / 2, y, spriteSize, spriteSize, WatchUi.loadResource(spriteForPose(pose)));
-        y += spriteSize + pad;
+        var total = spriteSize + gap + fh + gap + rowsH;
+        var y = (h - total) / 2;
+
+        dc.drawScaledBitmap(w / 2 - spriteSize / 2, y, spriteSize, spriteSize,
+            WatchUi.loadResource(spriteForPose(pose)));
+        y += spriteSize + gap;
 
         dc.setColor(poseColor, Graphics.COLOR_BLACK);
-        dc.drawText(w / 2, y, Graphics.FONT_XTINY, labelForPose(pose), Graphics.TEXT_JUSTIFY_CENTER);
-        y += fh;
-
         var jobsText = activeCount.format("%d") + (activeCount == 1 ? " job running" : " jobs running");
         dc.drawText(w / 2, y, Graphics.FONT_XTINY, jobsText, Graphics.TEXT_JUSTIFY_CENTER);
-        y += fh + pad;
+        y += fh + gap;
 
-        var rowWidth = (w * 0.60).toNumber();
-        var rowX = w / 2 - rowWidth / 2;
-        var rowHeight = fh + (7 * scale).toNumber() + fh;
-        var row1Y = y;
-        var row2Y = row1Y + rowHeight + pad;
+        var blockWidth = (260 * scale).toNumber();
+        var blockX = w / 2 - blockWidth / 2;
 
-        drawRow(dc, rowX, row1Y, rowWidth, scale, "5H", fivePct, fiveResetsAt, nowEpoch, accent, stale, hasData);
-        drawRow(dc, rowX, row2Y, rowWidth, scale, "7D", sevenPct, sevenResetsAt, nowEpoch, accent, stale, hasData);
+        var fiveColor = stale ? Chrome.DIM : Snap.pctColor(fivePct, accent);
+        var sevenColor = stale ? Chrome.DIM : Snap.pctColor(sevenPct, accent);
+
+        drawRow(dc, blockX, y, blockWidth, scale, "5 hour", fiveColor, fivePct, fiveResetsAt,
+            nowEpoch, stale, hasData);
+        drawRow(dc, blockX, y + rowHeight + rowGap, blockWidth, scale, "7 day", sevenColor, sevenPct,
+            sevenResetsAt, nowEpoch, stale, hasData);
 
         if (hasData && stale) {
             var mins = Snap.ageMinutes(stored, nowEpoch);
-            dc.setColor(LT_GRAY, Graphics.COLOR_BLACK);
-            dc.drawText(w / 2, h - (h * 0.13).toNumber(), Graphics.FONT_XTINY,
+            dc.setColor(Chrome.DIM, Graphics.COLOR_BLACK);
+            dc.drawText(w / 2, h - (44 * scale).toNumber() - fh, Graphics.FONT_XTINY,
                 "synced " + mins + "m ago", Graphics.TEXT_JUSTIFY_CENTER);
         }
+
+        Chrome.drawPageDots(dc, 1, accent);
     }
 
-    function drawRow(dc as Graphics.Dc, x as Number, y as Number, rowWidth as Number, scale as Float,
-            label as String, pct as Number, resetsAt as Number, nowEpoch as Number, accent as Number,
+    // One quota row: 14px rounded-square bullet, then label/percent, bar and caption
+    // in the remaining width.
+    function drawRow(dc as Graphics.Dc, x as Number, y as Number, blockWidth as Number, scale as Float,
+            label as String, color as Number, pct as Number, resetsAt as Number, nowEpoch as Number,
             stale as Boolean, hasData as Boolean) as Void {
 
         if (pct > 100) { pct = 100; }
         if (pct < 0) { pct = 0; }
 
-        var color = stale ? LT_GRAY : Snap.pctColor(pct, accent);
+        var fh = dc.getFontHeight(Graphics.FONT_XTINY);
+        var bulletSize = (14 * scale).toNumber();
+        if (bulletSize < 4) { bulletSize = 4; }
+        var bulletR = (3 * scale).toNumber();
+        if (bulletR < 1) { bulletR = 1; }
 
-        dc.setColor(stale ? LT_GRAY : Graphics.COLOR_WHITE, Graphics.COLOR_BLACK);
-        dc.drawText(x, y, Graphics.FONT_XTINY, label, Graphics.TEXT_JUSTIFY_LEFT);
         dc.setColor(color, Graphics.COLOR_BLACK);
-        dc.drawText(x + rowWidth, y, Graphics.FONT_XTINY, pct.format("%d") + "%", Graphics.TEXT_JUSTIFY_RIGHT);
+        dc.fillRoundedRectangle(x, y + fh / 2 - bulletSize / 2, bulletSize, bulletSize, bulletR);
 
-        var barY = y + dc.getFontHeight(Graphics.FONT_XTINY) + (2 * scale).toNumber();
+        var contentX = x + bulletSize + (14 * scale).toNumber();
+        var contentW = x + blockWidth - contentX;
+
+        dc.setColor(stale ? Chrome.DIM : Chrome.TEXT_PRIMARY, Graphics.COLOR_BLACK);
+        dc.drawText(contentX, y, Graphics.FONT_XTINY, label, Graphics.TEXT_JUSTIFY_LEFT);
+        dc.drawText(contentX + contentW, y, Graphics.FONT_XTINY, pct.format("%d") + "%",
+            Graphics.TEXT_JUSTIFY_RIGHT);
+
+        var barY = y + fh + (6 * scale).toNumber();
         var barH = (6 * scale).toNumber();
         if (barH < 2) { barH = 2; }
         var barR = barH / 2;
 
-        dc.setColor(0x333333, Graphics.COLOR_BLACK);
-        dc.fillRoundedRectangle(x, barY, rowWidth, barH, barR);
+        dc.setColor(Chrome.TRACK, Graphics.COLOR_BLACK);
+        dc.fillRoundedRectangle(contentX, barY, contentW, barH, barR);
 
-        var fillW = (rowWidth * pct / 100.0).toNumber();
+        var fillW = (contentW * pct / 100.0).toNumber();
         if (fillW > 0) {
             dc.setColor(color, Graphics.COLOR_BLACK);
-            dc.fillRoundedRectangle(x, barY, fillW, barH, barR);
+            dc.fillRoundedRectangle(contentX, barY, fillW, barH, barR);
         }
 
-        var captionY = barY + barH + (2 * scale).toNumber();
-        dc.setColor(LT_GRAY, Graphics.COLOR_BLACK);
+        var captionY = barY + barH + (4 * scale).toNumber();
+        dc.setColor(Chrome.DIM, Graphics.COLOR_BLACK);
         var caption = hasData ? "resets in " + Snap.countdown(resetsAt, nowEpoch) : "resets in --";
-        dc.drawText(x + rowWidth / 2, captionY, Graphics.FONT_XTINY, caption, Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(contentX, captionY, Graphics.FONT_XTINY, caption, Graphics.TEXT_JUSTIFY_LEFT);
     }
 }

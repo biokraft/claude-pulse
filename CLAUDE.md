@@ -68,6 +68,38 @@ the simulator resists automation, and each workaround in it was needed:
 
 Playwright cannot help here — it drives browsers, and the simulator is a native app.
 
+## Store assets
+
+`scripts/build-store-assets.py` turns the raw window captures into the whole upload
+folder, so a design change only costs two commands:
+
+```bash
+VENV=/path/to/venv/bin/python           # the venv with pyobjc + pillow
+PYTHON=$VENV scripts/shoot-pages.sh .screenshots
+$VENV scripts/build-store-assets.py .screenshots ~/Desktop/ClaudePulse-store
+```
+
+What it produces, and how:
+
+- **Screen images** (`screen-1-rings`, `screen-2-detail`, `screen-3-cost`) — the round
+  display is cut out of each window capture using the fractions at the top of the
+  script (centre `0.5`/`0.492`, side `0.53` of the window width), resized to 416x416 and
+  masked to a circle so the simulator bezel never shows. Those fractions are empirical:
+  if the crop is too tight the text nearest the display edge gets clipped — page 2's
+  `resets in 3d 7h` is the canary. Re-check them if the simulator window size changes.
+- **Hero image** (`hero-1440x720.png`) — the three finished screen images drawn as watch
+  discs on the `#141312` background with the app name above. Built from the screen
+  images, not the raw captures, so the framing always matches the listing.
+- **Cover image and both 128x128 icons** — copied unchanged from
+  `design_handoff_garmin_claude_widget/Garmin Watch Claude Usage Tracker/store-assets/`.
+- **`ClaudePulse.iq`** — copied from the Desktop if the export is there.
+
+`FORM-ANSWERS.md` in that folder holds the copy for every field on the submission form;
+it is written by hand, not generated, so carry it over when regenerating.
+
+All store images have size limits: screen images 150 KB, cover 300 KB, hero 2048 KB. The
+script prints each file's size at the end — check that column before uploading.
+
 ## Fake data
 
 The simulator has no relay, so `ClaudePulseApp.seedFakeDataForScreenshots()` writes a

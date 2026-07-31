@@ -137,7 +137,7 @@ func TestPollNon429ErrorResetsBackoff(t *testing.T) {
 
 	p := NewUsagePoller(srv.URL, fixedCreds)
 	t0 := time.Date(2026, 7, 27, 10, 0, 0, 0, time.UTC)
-	p.Poll(t0) // 429 → interval 10m, nextDue t0+10m
+	p.Poll(t0)                       // 429 → interval 10m, nextDue t0+10m
 	p.Poll(t0.Add(11 * time.Minute)) // 500 → interval resets to 5m
 	t2 := t0.Add(17 * time.Minute)
 	p.Poll(t2) // 429 → interval 10m (5m*2), NOT 20m

@@ -33,4 +33,12 @@ jobs:
       - name: Compile unit tests
         run: monkeyc -f watch/monkey.jungle -d fr965 -o /tmp/cp-test.prg -y /tmp/key.der --unit-test
       - name: Run unit tests
-        run: xvfb-run monkeydo /tmp/cp-test.prg fr965 -t
+        run: |
+          # monkeydo needs a running simulator on a display, and it exits 1 even
+          # when every test passes — so the verdict comes from its output.
+          export DISPLAY=:1
+          Xvfb "$DISPLAY" -screen 0 1280x1024x24 &
+          simulator > /dev/null 2>&1 &
+          sleep 10
+          monkeydo /tmp/cp-test.prg fr965 -t | tee /tmp/result.txt || true
+          tail -1 /tmp/result.txt | grep -q '^PASSED'

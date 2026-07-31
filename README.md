@@ -109,6 +109,22 @@ the store upload folder; [`CLAUDE.md`](CLAUDE.md) explains both.
 Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). For anything
 security-related, [SECURITY.md](SECURITY.md) has the disclosure process.
 
+## Found a bug? Please open an issue
+
+Genuinely — [open one](https://github.com/biokraft/claude-pulse/issues/new/choose). There
+are templates for [bug reports](.github/ISSUE_TEMPLATE/bug_report.yml),
+[feature ideas](.github/ISSUE_TEMPLATE/feature_request.yml) and
+[device reports](.github/ISSUE_TEMPLATE/device_report.yml).
+
+**Device reports are the most useful thing you can send.** The app ships to 70 Garmin
+models and I own exactly one of them, so every other device's layout is educated
+guesswork. If something clips, overlaps or just looks off on your watch, a photo of the
+watch face and the model name is enough to get it fixed.
+
+Questions and half-formed ideas belong in
+[Discussions](https://github.com/biokraft/claude-pulse/discussions). Security issues go
+through [SECURITY.md](SECURITY.md) instead — please don't file those publicly.
+
 ## Caveats
 
 - Usage comes from an **undocumented** Anthropic endpoint (`/api/oauth/usage`). It may

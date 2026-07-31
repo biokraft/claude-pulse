@@ -23,6 +23,7 @@ jobs:
 
   watch:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     container: ghcr.io/matco/connectiq-tester@sha256:7a6f586cb0e0393ff288da09cf27b6dad40a0058a346c529b99fd0fc19858f0f
     steps:
       - uses: actions/checkout@v4
@@ -37,8 +38,13 @@ jobs:
           # monkeydo needs a running simulator on a display, and it exits 1 even
           # when every test passes — so the verdict comes from its output.
           export DISPLAY=:1
-          Xvfb "$DISPLAY" -screen 0 1280x1024x24 &
-          simulator > /dev/null 2>&1 &
+          Xvfb "$DISPLAY" -screen 0 1280x1024x24 >/dev/null 2>&1 &
+          simulator >/dev/null 2>&1 &
           sleep 10
-          monkeydo /tmp/cp-test.prg fr965 -t | tee /tmp/result.txt || true
+          # monkeydo can sit forever waiting on the simulator, so bound it and
+          # keep its output off the step's stdout, which the background jobs
+          # would otherwise hold open.
+          timeout 300 monkeydo /tmp/cp-test.prg fr965 -t >/tmp/result.txt 2>&1 || true
+          cat /tmp/result.txt
+          kill %1 %2 2>/dev/null || true
           tail -1 /tmp/result.txt | grep -q '^PASSED'

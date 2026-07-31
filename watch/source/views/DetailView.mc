@@ -78,9 +78,11 @@ class DetailView extends WatchUi.View {
         var poseColor = stale ? Chrome.DIM : (pose == :annoyed ? Snap.WARN_COLOR : accent);
 
         var fh = dc.getFontHeight(Graphics.FONT_XTINY);
-        // The mockup's 52px sprite box is filled edge to edge; the shipped art
-        // carries transparent padding, so the box is enlarged to match visually.
-        var spriteSize = (72 * scale).toNumber();
+        // The drawables are cropped to the mascot itself (50x33 source, see
+        // scripts/crop-sprites.py), so the drawn box is all mascot and the
+        // aspect ratio has to be preserved.
+        var spriteW = (80 * scale).toNumber();
+        var spriteH = (spriteW * 33 / 50.0).toNumber();
         var gap = (8 * scale).toNumber();
         if (gap < 2) { gap = 2; }
 
@@ -88,12 +90,14 @@ class DetailView extends WatchUi.View {
         var rowGap = (14 * scale).toNumber();
         var rowsH = rowHeight * 2 + rowGap;
 
-        var total = spriteSize + gap + fh + gap + rowsH;
+        // Every element below is real ink now, so centring the sum of their
+        // heights centres what the wearer actually sees.
+        var total = spriteH + gap + fh + gap + rowsH;
         var y = (h - total) / 2;
 
-        dc.drawScaledBitmap(w / 2 - spriteSize / 2, y, spriteSize, spriteSize,
+        dc.drawScaledBitmap(w / 2 - spriteW / 2, y, spriteW, spriteH,
             WatchUi.loadResource(spriteForPose(pose)));
-        y += spriteSize + gap;
+        y += spriteH + gap;
 
         dc.setColor(poseColor, Graphics.COLOR_BLACK);
         var jobsText = activeCount.format("%d") + (activeCount == 1 ? " job running" : " jobs running");

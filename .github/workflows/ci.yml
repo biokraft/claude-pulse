@@ -24,27 +24,14 @@ jobs:
   watch:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    container: ghcr.io/matco/connectiq-tester@sha256:7a6f586cb0e0393ff288da09cf27b6dad40a0058a346c529b99fd0fc19858f0f
     steps:
       - uses: actions/checkout@v4
-      - name: Generate throwaway dev key
-        run: |
-          openssl genrsa -out /tmp/key.pem 4096
-          openssl pkcs8 -topk8 -inform PEM -outform DER -in /tmp/key.pem -out /tmp/key.der -nocrypt
-      - name: Compile unit tests
-        run: monkeyc -f watch/monkey.jungle -d fr965 -o /tmp/cp-test.prg -y /tmp/key.der --unit-test
+      # The image's own entrypoint compiles, starts Xvfb and the simulator, runs
+      # monkeydo and translates its output into an exit code — monkeydo always
+      # exits 1, even when every test passes. Driving those steps by hand instead
+      # just hangs, so mount watch/ as the app and let the entrypoint do its job.
       - name: Run unit tests
         run: |
-          # monkeydo needs a running simulator on a display, and it exits 1 even
-          # when every test passes — so the verdict comes from its output.
-          export DISPLAY=:1
-          Xvfb "$DISPLAY" -screen 0 1280x1024x24 >/dev/null 2>&1 &
-          simulator >/dev/null 2>&1 &
-          sleep 10
-          # monkeydo can sit forever waiting on the simulator, so bound it and
-          # keep its output off the step's stdout, which the background jobs
-          # would otherwise hold open.
-          timeout 300 monkeydo /tmp/cp-test.prg fr965 -t >/tmp/result.txt 2>&1 || true
-          cat /tmp/result.txt
-          kill %1 %2 2>/dev/null || true
-          tail -1 /tmp/result.txt | grep -q '^PASSED'
+          docker run --rm -v "$PWD/watch":/app -w /app \
+            ghcr.io/matco/connectiq-tester@sha256:7a6f586cb0e0393ff288da09cf27b6dad40a0058a346c529b99fd0fc19858f0f \
+            fr965

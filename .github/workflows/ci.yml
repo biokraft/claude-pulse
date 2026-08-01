@@ -22,13 +22,54 @@ jobs:
       - run: go test -race ./...
       # The installer is the documented entry point, so a break in it is a
       # break in the quickstart. Runs against this checkout, not a clone.
+      # The service path needs a systemd user session, which a runner has no
+      # way to provide, so it is verified by hand on macOS instead.
       - name: Check the installer
         working-directory: .
+        env:
+          PREFIX: ${{ runner.temp }}/bin
+          CLAUDE_PULSE_HOME: ${{ runner.temp }}/pulse-home
         run: |
+          set -euo pipefail
           bash -n install.sh
-          PREFIX="$RUNNER_TEMP/bin" bash install.sh
-          "$RUNNER_TEMP/bin/claude-pulse-relay" version
-          "$RUNNER_TEMP/bin/claude-pulse-relay" help > /dev/null
+
+          echo "::group::fresh install"
+          bash install.sh
+          "$PREFIX/claude-pulse-relay" version
+          "$PREFIX/claude-pulse-relay" help > /dev/null
+          echo "::endgroup::"
+
+          # Generate a config, so the upgrade has something it could destroy.
+          "$PREFIX/claude-pulse-relay" --no-tunnel -listen 127.0.0.1:8797 &
+          relay_pid=$!
+          sleep 3
+          kill "$relay_pid" || true
+          token_before="$(jq -r .token "$CLAUDE_PULSE_HOME/config.json")"
+          [ -n "$token_before" ] && [ "$token_before" != "null" ]
+
+          echo "::group::upgrade (re-run)"
+          out="$(bash install.sh 2>&1)"
+          echo "$out"
+          echo "::endgroup::"
+
+          grep -q "Upgrading claude-pulse-relay" <<<"$out" \
+            || { echo "second run did not detect the existing install"; exit 1; }
+          "$PREFIX/claude-pulse-relay" version
+          "$PREFIX/claude-pulse-relay" help > /dev/null
+
+          token_after="$(jq -r .token "$CLAUDE_PULSE_HOME/config.json")"
+          [ "$token_before" = "$token_after" ] \
+            || { echo "upgrade changed the access token"; exit 1; }
+
+          receipt="$(cat "$CLAUDE_PULSE_HOME/installed-version")"
+          installed="$("$PREFIX/claude-pulse-relay" version | awk '{print $2}')"
+          [ "$receipt" = "$installed" ] \
+            || { echo "receipt $receipt != installed $installed"; exit 1; }
+
+          # A rolled-back or half-finished upgrade leaves these behind.
+          for stray in "$PREFIX/claude-pulse-relay.new" "$PREFIX/claude-pulse-relay.bak"; do
+            [ ! -e "$stray" ] || { echo "left $stray behind"; exit 1; }
+          done
 
   watch:
     runs-on: ubuntu-latest

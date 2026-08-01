@@ -107,6 +107,42 @@ snapshot via `Snap.save(...)` matching the mockup's values (68 % / 42 %, 2 jobs,
 $14.82, 2.1M tokens). It is a temporary dev aid: **remove the function and its call in
 `onStart()` before any real build or store export.**
 
+## Releases — required for every feature
+
+**Every user-visible feature, and every notable fix, ends with a version bump and a
+public GitHub release.** This is not optional housekeeping: `install.sh` stamps the
+binary from `git describe`, the upgrade path reports `old -> new`, and the version
+receipt at `~/.claude-pulse/installed-version` is compared against it. Skip the tag and
+users see meaningless version strings like `v1.0.0-beta.1-7-gabc1234`, and cannot tell
+whether an upgrade did anything.
+
+Versioning is [semver](https://semver.org) with a `v` prefix. While the app is in beta,
+releases are `v1.0.0-beta.N` and marked as pre-releases.
+
+```bash
+# 1. Tag (annotated, so `git describe` picks it up)
+git tag -a v1.0.0-beta.2 -m "v1.0.0-beta.2"
+git push origin v1.0.0-beta.2
+
+# 2. Export the watch package if the watch app changed at all
+export JAVA_HOME=/opt/homebrew/opt/openjdk
+SDK="$(ls -d "$HOME/Library/Application Support/Garmin/ConnectIQ/Sdks"/*/bin | tail -1)"
+"$SDK/monkeyc" -e -f watch/monkey.jungle -o ~/Desktop/ClaudePulse-v1.0.0-beta.2.iq \
+  -y developer_key.der -r
+
+# 3. Publish, attaching the .iq when there is one
+gh release create v1.0.0-beta.2 --prerelease \
+  --title "v1.0.0-beta.2 — <what changed>" \
+  --notes "..." \
+  ~/Desktop/ClaudePulse-v1.0.0-beta.2.iq
+```
+
+Release notes lead with what the user does differently, not the commit list. If the
+change affects the relay, say whether re-running the installer is enough (it usually is
+— it upgrades in place and preserves config). If it affects the watch app, the `.iq`
+also has to be re-uploaded to the Connect IQ Store, which is a manual step in Garmin's
+dashboard and easy to forget.
+
 ## Store
 
 Submission needs the `.iq` export, the store assets under

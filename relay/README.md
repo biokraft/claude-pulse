@@ -29,6 +29,13 @@ curl -fsSL https://raw.githubusercontent.com/biokraft/claude-pulse/main/install.
 Set `PREFIX` to install somewhere else, or `REF` to build a specific tag or branch. The
 script needs `git` and Go 1.25+, and warns if `cloudflared` is missing.
 
+Running it again upgrades in place: it finds the existing binary (wherever it is on your
+`PATH`), stops an installed launchd/systemd service, swaps the binary, and restarts the
+service on the new version. `~/.claude-pulse/` is never touched, so your token and cost
+history survive. If the new version fails to start, the previous binary is restored and
+the script exits non-zero. Note that restarting rotates the quick-tunnel URL, so the
+watch needs the new one.
+
 By hand, from a checkout — the Go module is in `relay/`, not the repo root:
 
 ```bash

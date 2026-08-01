@@ -25,3 +25,19 @@ func TestPrintPairingIncludesURLAndToken(t *testing.T) {
 		t.Fatalf("missing pairing info:\n%s", out)
 	}
 }
+
+// Under launchd or systemd the pairing block goes to a log file, where escape
+// codes are noise the user has to read around.
+func TestPrintPairingIsPlainWhenNotATerminal(t *testing.T) {
+	var buf bytes.Buffer
+	PrintPairing(&buf, "https://x.trycloudflare.com", "sekret")
+	if strings.Contains(buf.String(), "\033[") {
+		t.Errorf("wrote ANSI escapes to a non-terminal:\n%q", buf.String())
+	}
+}
+
+func TestPaletteForNonTerminalIsEmpty(t *testing.T) {
+	if got := paletteFor(&bytes.Buffer{}); got != plain {
+		t.Errorf("paletteFor(buffer) = %+v, want the empty palette", got)
+	}
+}

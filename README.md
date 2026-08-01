@@ -63,6 +63,10 @@ This builds `claude-pulse-relay` from source (needs Go 1.25+) and installs it to
 claude-pulse-relay ./cmd/claude-pulse-relay` — note the `cd`, the Go module lives in
 `relay/`, not the repo root.
 
+**To upgrade later, run that same command again.** It detects the existing install,
+replaces the binary, restarts your service on the new version if you have one, and
+leaves `~/.claude-pulse/` — your token and cost history — untouched.
+
 **2. Start it:**
 
 ```bash

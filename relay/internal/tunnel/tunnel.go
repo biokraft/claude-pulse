@@ -24,10 +24,14 @@ func ParseURL(line string) (string, bool) {
 }
 
 func PrintPairing(out io.Writer, url, token string) {
-	fmt.Fprintf(out, "\n=== Claude Pulse watch pairing ===\n")
-	fmt.Fprintf(out, "Relay URL: %s\nToken:     %s\n", url, token)
-	fmt.Fprintf(out, "Enter both in Garmin Connect > Claude Pulse settings.\n")
-	fmt.Fprintf(out, "Scan the code below to open both on your phone.\n\n")
+	p := paletteFor(out)
+	fmt.Fprintf(out, "\n%s%s  Claude Pulse — watch pairing%s\n\n", p.Clay, p.Bold, p.Reset)
+	fmt.Fprintf(out, "  %sRelay URL%s  %s%s%s\n", p.Muted, p.Reset, p.Cream, url, p.Reset)
+	fmt.Fprintf(out, "  %sToken%s      %s%s%s\n\n", p.Muted, p.Reset, p.Cream, token, p.Reset)
+	fmt.Fprintf(out, "  %sScan the code below to open both on your phone, or enter them in%s\n",
+		p.Muted, p.Reset)
+	fmt.Fprintf(out, "  %sGarmin Connect > Connect IQ apps > Claude Pulse > Settings.%s\n\n",
+		p.Muted, p.Reset)
 	if qr, err := qrcode.New(url+"?token="+token, qrcode.Medium); err == nil {
 		fmt.Fprintln(out, qr.ToSmallString(false))
 	}

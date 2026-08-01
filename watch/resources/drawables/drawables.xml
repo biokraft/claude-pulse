@@ -1,0 +1,11 @@
+<drawables>
+    <bitmap id="LauncherIcon" filename="launcher_icon.png"/>
+    <bitmap id="ClawdIdleLook" filename="clawd_idle_look.png"/>
+    <bitmap id="ClawdIdleYawn" filename="clawd_idle_yawn.png"/>
+    <bitmap id="ClawdIdleDoze" filename="clawd_idle_doze.png"/>
+    <bitmap id="ClawdIdleCollapse" filename="clawd_idle_collapse.png"/>
+    <bitmap id="ClawdCollapseSleep" filename="clawd_collapse_sleep.png"/>
+    <bitmap id="ClawdHeadphonesGroove" filename="clawd_headphones_groove.png"/>
+    <bitmap id="ClawdError" filename="clawd_error.png"/>
+    <bitmap id="ClawdHappy" filename="clawd_happy.png"/>
+</drawables>

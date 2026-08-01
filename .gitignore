@@ -1,0 +1,17 @@
+.DS_Store
+bin/
+dist/
+*.prg
+*.prg.debug.xml
+gen/
+developer_key*
+*.pem
+relay/claude-pulse-relay
+
+# Local tooling and planning artifacts
+.claude/
+.superpowers/
+.screenshots/
+docs/superpowers/
+docs/ip-trademark-findings.md
+PRD.md

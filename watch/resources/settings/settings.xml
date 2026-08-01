@@ -1,0 +1,16 @@
+<settings>
+    <setting propertyKey="@Properties.relayUrl" title="Relay URL">
+        <settingConfig type="alphaNumeric"/>
+    </setting>
+    <setting propertyKey="@Properties.relayToken" title="Relay token">
+        <settingConfig type="alphaNumeric"/>
+    </setting>
+    <setting propertyKey="@Properties.accentColor" title="Accent color">
+        <settingConfig type="list">
+            <listEntry value="13400662">Terracotta</listEntry>
+            <listEntry value="5999087">Blue</listEntry>
+            <listEntry value="7323507">Green</listEntry>
+            <listEntry value="11759569">Purple</listEntry>
+        </settingConfig>
+    </setting>
+</settings>

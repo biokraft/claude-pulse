@@ -1,0 +1,34 @@
+name: Device report
+description: Tell us how it looks on a device we can't test
+labels: [device-compat]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The app targets 70 Garmin models and nobody owns them all. Reports of layouts
+        that clip, overlap or look wrong on real hardware are genuinely useful.
+
+  - type: input
+    id: device
+    attributes:
+      label: Device and firmware version
+      placeholder: Venu 3S, 12.34
+    validations:
+      required: true
+
+  - type: dropdown
+    id: verdict
+    attributes:
+      label: How does it look?
+      options:
+        - Works fine
+        - Minor layout issue
+        - Badly broken
+    validations:
+      required: true
+
+  - type: textarea
+    id: detail
+    attributes:
+      label: What's wrong, and on which page?
+      description: Rings, Detail, Cost or the glance view. Photos of the watch face help a lot.

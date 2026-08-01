@@ -26,12 +26,26 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      # The image's own entrypoint compiles, starts Xvfb and the simulator, runs
-      # monkeydo and translates its output into an exit code — monkeydo always
-      # exits 1, even when every test passes. Driving those steps by hand instead
-      # just hangs, so mount watch/ as the app and let the entrypoint do its job.
+      # Runs the same sequence as the image's tester.sh, with two deliberate
+      # differences: type checking at level 2 rather than its hardcoded 3, and
+      # `docker run` rather than a `container:` job — the latter overrides HOME,
+      # and the simulator only finds its device bits under /root/.Garmin.
+      # monkeydo exits 1 even when every test passes, so the verdict is read
+      # from its output.
       - name: Run unit tests
         run: |
-          docker run --rm -v "$PWD/watch":/app -w /app \
+          docker run --rm -v "$PWD/watch":/app -w /app --entrypoint bash \
             ghcr.io/matco/connectiq-tester@sha256:7a6f586cb0e0393ff288da09cf27b6dad40a0058a346c529b99fd0fc19858f0f \
-            fr965
+            -c '
+              set -e
+              openssl genrsa -out /tmp/key.pem 4096
+              openssl pkcs8 -topk8 -inform PEM -outform DER -in /tmp/key.pem -out /tmp/key.der -nocrypt
+              monkeyc -f monkey.jungle -d fr965 -o /tmp/app.prg -y /tmp/key.der -t -l 2
+              export DISPLAY=:1
+              Xvfb "$DISPLAY" -screen 0 1280x1024x24 >/dev/null 2>&1 &
+              simulator >/dev/null 2>&1 &
+              sleep 15
+              timeout 300 monkeydo /tmp/app.prg fr965 -t > /tmp/result.txt 2>&1 || true
+              cat /tmp/result.txt
+              tail -1 /tmp/result.txt | grep -q "^PASSED"
+            '

@@ -55,8 +55,8 @@ class DetailView extends WatchUi.View {
         var stale = true;
         var hasData = stored != null;
 
-        if (hasData) {
-            var d = stored["d"] as Dictionary;
+        if (stored != null) {
+            var d = stored["d"] as Dictionary?;
             if (d != null) {
                 if (d["five_hour_pct"] != null) { fivePct = d["five_hour_pct"] as Number; }
                 if (d["seven_day_pct"] != null) { sevenPct = d["seven_day_pct"] as Number; }
@@ -70,7 +70,9 @@ class DetailView extends WatchUi.View {
             stale = Snap.isStale(stored, nowEpoch);
         }
 
-        var inactiveSecs = isActive ? 0 : (nowEpoch - (hasData ? (stored["fetchedEpoch"] as Number) : nowEpoch));
+        var fetchedEpoch = nowEpoch;
+        if (stored != null) { fetchedEpoch = stored["fetchedEpoch"] as Number; }
+        var inactiveSecs = isActive ? 0 : (nowEpoch - fetchedEpoch);
         var info = Gregorian.info(Time.now(), Time.FORMAT_SHORT);
         var hourOfDay = info.hour;
         var pose = Pose.compute(fivePct, sevenPct, isActive, hourOfDay, inactiveSecs, 0, nowEpoch);
@@ -96,7 +98,7 @@ class DetailView extends WatchUi.View {
         var y = (h - total) / 2;
 
         dc.drawScaledBitmap(w / 2 - spriteW / 2, y, spriteW, spriteH,
-            WatchUi.loadResource(spriteForPose(pose)));
+            WatchUi.loadResource(spriteForPose(pose)) as WatchUi.BitmapResource);
         y += spriteH + gap;
 
         dc.setColor(poseColor, Graphics.COLOR_BLACK);
@@ -115,7 +117,7 @@ class DetailView extends WatchUi.View {
         drawRow(dc, blockX, y + rowHeight + rowGap, blockWidth, scale, "7 day", sevenColor, sevenPct,
             sevenResetsAt, nowEpoch, stale, hasData);
 
-        if (hasData && stale) {
+        if (stored != null && stale) {
             var mins = Snap.ageMinutes(stored, nowEpoch);
             dc.setColor(Chrome.DIM, Graphics.COLOR_BLACK);
             dc.drawText(w / 2, h - (44 * scale).toNumber() - fh, Graphics.FONT_XTINY,

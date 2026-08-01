@@ -4,6 +4,7 @@ import Toybox.Lang;
 import Toybox.Time;
 import Toybox.Application.Properties;
 
+(:glance)
 const LT_GRAY = 0xAAAAAA;
 
 (:glance)

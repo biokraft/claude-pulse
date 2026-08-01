@@ -48,6 +48,10 @@ Cloudflare quick tunnel, printing the public URL, the token, and a QR
 code. Enter URL and token in **Garmin Connect → Connect IQ apps →
 Claude Pulse → Settings**.
 
+Scanning the QR code opens a pairing page (`GET /`, same token auth) that
+shows the URL and token with copy buttons, so you don't have to retype a
+32-character token from a terminal onto a phone.
+
 > Quick-tunnel URLs are random and rotate every time the relay restarts.
 > When that happens the relay prints a fresh QR — re-enter the new URL in
 > the watch settings. Run the relay as a service (below) to make restarts

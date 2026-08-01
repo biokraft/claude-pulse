@@ -37,12 +37,32 @@ func New(token string, st *store.Store, p Providers) http.Handler {
 	guard := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if !authorized(r, token) {
+				// A browser landing here scanned a stale QR code. Answer in
+				// HTML: http.Error sends text/plain with nosniff, which mobile
+				// Safari turns into a file download instead of a page.
+				if strings.Contains(r.Header.Get("Accept"), "text/html") {
+					w.Header().Set("Content-Type", "text/html; charset=utf-8")
+					w.WriteHeader(http.StatusUnauthorized)
+					if _, err := w.Write([]byte(unauthorizedHTML)); err != nil {
+						log.Printf("unauthorized page: %v", err)
+					}
+					return
+				}
 				http.Error(w, "unauthorized", http.StatusUnauthorized)
 				return
 			}
 			next.ServeHTTP(w, r)
 		})
 	}
+	// The QR code points here, so "/" has to be something a phone browser can
+	// render. Without it the default mux answered with a plain-text 404 that
+	// mobile Safari offered as a file download.
+	mux.Handle("GET /", guard(PairHandler(token)))
+	// Browsers request this unprompted; without a route it 401s and shows up
+	// as a console error on the pairing page.
+	mux.HandleFunc("GET /favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
 	mux.Handle("POST /ingest/statusline", guard(IngestHandler(st, func() string {
 		return time.Now().UTC().Format("2006-01-02")
 	}, time.Now)))

@@ -20,6 +20,15 @@ jobs:
           fi
       - run: go vet ./...
       - run: go test -race ./...
+      # The installer is the documented entry point, so a break in it is a
+      # break in the quickstart. Runs against this checkout, not a clone.
+      - name: Check the installer
+        working-directory: .
+        run: |
+          bash -n install.sh
+          PREFIX="$RUNNER_TEMP/bin" bash install.sh
+          "$RUNNER_TEMP/bin/claude-pulse-relay" version
+          "$RUNNER_TEMP/bin/claude-pulse-relay" help > /dev/null
 
   watch:
     runs-on: ubuntu-latest

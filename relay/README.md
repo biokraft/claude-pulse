@@ -22,17 +22,23 @@ claude-pulse-relay
 ## Install
 
 ```bash
-# from source (Go 1.25+)
-cd relay && go build -o claude-pulse-relay ./cmd/claude-pulse-relay
+# one-liner: builds from source and installs to ~/.local/bin
+curl -fsSL https://raw.githubusercontent.com/biokraft/claude-pulse/main/install.sh | bash
+```
 
-# (placeholder, once published)
-brew install biokraft/tap/claude-pulse-relay
+Set `PREFIX` to install somewhere else, or `REF` to build a specific tag or branch. The
+script needs `git` and Go 1.25+, and warns if `cloudflared` is missing.
+
+By hand, from a checkout — the Go module is in `relay/`, not the repo root:
+
+```bash
+cd relay && go build -o claude-pulse-relay ./cmd/claude-pulse-relay
 ```
 
 ## Quickstart
 
 ```bash
-./claude-pulse-relay
+claude-pulse-relay          # claude-pulse-relay help lists every command
 ```
 
 On first run this generates a config at `~/.claude-pulse/config.json`
@@ -50,7 +56,7 @@ Claude Pulse → Settings**.
 ## Run as a background service
 
 ```bash
-./claude-pulse-relay service install
+claude-pulse-relay service install
 ```
 
 This writes and loads a launchd agent (`~/Library/LaunchAgents/com.claudepulse.relay.plist`)
@@ -65,7 +71,7 @@ instead:
 - Linux: `journalctl --user -u claude-pulse-relay -f`
 
 ```bash
-./claude-pulse-relay service uninstall
+claude-pulse-relay service uninstall
 ```
 
 Stops and removes the installed service.
@@ -76,7 +82,7 @@ The cost page on the watch is fed by a Claude Code statusline hook that
 forwards session cost/token totals to the relay:
 
 ```bash
-./claude-pulse-relay hook install
+claude-pulse-relay hook install
 ```
 
 This adds a `statusLine` entry to `~/.claude/settings.json` that pipes the
@@ -94,7 +100,7 @@ your own reverse proxy — pass `--no-tunnel` and connect directly to
 `cfg.Listen` (default `127.0.0.1:8787`; override with `-listen`):
 
 ```bash
-./claude-pulse-relay --no-tunnel -listen 0.0.0.0:8787
+claude-pulse-relay --no-tunnel -listen 0.0.0.0:8787
 ```
 
 The watch requires HTTPS, so front the relay with something that

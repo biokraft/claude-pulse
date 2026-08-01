@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"syscall"
 	"time"
 
@@ -24,6 +25,33 @@ import (
 	"github.com/biokraft/claude-pulse/relay/internal/tunnel"
 )
 
+// version is overridden at build time with -ldflags "-X main.version=…".
+var version = "dev"
+
+const usageText = `claude-pulse-relay — feeds the Claude Pulse Garmin watch app with your
+Claude Code usage. Your credentials never leave this machine.
+
+Usage:
+  claude-pulse-relay [flags]              start the relay (default)
+  claude-pulse-relay service install      run it in the background, across reboots
+  claude-pulse-relay service uninstall    stop and remove that service
+  claude-pulse-relay hook install         forward session cost from Claude Code
+  claude-pulse-relay version              print the version
+  claude-pulse-relay help                 print this help
+
+Flags:
+  -listen <addr>           listen address (default from config, 127.0.0.1:8787)
+  -no-tunnel               skip the Cloudflare quick tunnel and serve locally
+  -jobs-dir <path>         Claude jobs directory to watch for active sessions
+  -anthropic-base <url>    Anthropic API base URL
+
+Starting with no arguments generates ~/.claude-pulse/config.json on first run,
+then prints the pairing URL, token and QR code to enter in
+Garmin Connect -> Connect IQ apps -> Claude Pulse -> Settings.
+
+Docs: https://github.com/biokraft/claude-pulse/tree/main/relay
+`
+
 func main() {
 	if len(os.Args) > 1 {
 		switch os.Args[1] {
@@ -33,6 +61,18 @@ func main() {
 		case "hook":
 			runHookCmd(os.Args[2:])
 			return
+		case "help", "-h", "--help":
+			fmt.Print(usageText)
+			return
+		case "version", "-v", "--version":
+			fmt.Printf("claude-pulse-relay %s\n", version)
+			return
+		}
+		// Anything that is not a flag is a mistyped subcommand. Without this,
+		// flag.Parse silently ignores it and the relay starts anyway.
+		if !strings.HasPrefix(os.Args[1], "-") {
+			fmt.Fprintf(os.Stderr, "unknown command %q\n\n%s", os.Args[1], usageText)
+			os.Exit(2)
 		}
 	}
 
@@ -41,6 +81,7 @@ func main() {
 	noTunnel := flag.Bool("no-tunnel", false, "do not spawn cloudflared quick tunnel")
 	jobsDir := flag.String("jobs-dir", filepath.Join(home, ".claude", "jobs"), "Claude jobs dir")
 	base := flag.String("anthropic-base", "https://api.anthropic.com", "Anthropic API base URL")
+	flag.Usage = func() { fmt.Fprint(os.Stderr, usageText) }
 	flag.Parse()
 
 	cfg, err := config.Load()

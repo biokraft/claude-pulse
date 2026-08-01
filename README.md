@@ -51,23 +51,33 @@ can point it at your own reverse proxy or Tailscale network with `--no-tunnel`.
 
 ## Quickstart
 
-**1. Run the relay** (macOS or Linux, with Claude Code installed and logged in):
+**1. Install the relay** (macOS or Linux, with Claude Code installed and logged in):
 
 ```bash
-git clone https://github.com/biokraft/claude-pulse.git
-cd claude-pulse/relay
-go build -o claude-pulse-relay ./cmd/claude-pulse-relay
-./claude-pulse-relay
+curl -fsSL https://raw.githubusercontent.com/biokraft/claude-pulse/main/install.sh | bash
 ```
 
-It generates a config with a random token, opens a tunnel, and prints a URL, a token and a
-QR code.
+This builds `claude-pulse-relay` from source (needs Go 1.25+) and installs it to
+`~/.local/bin`, then tells you what to do next. Override the location with
+`PREFIX=/usr/local/bin`. Prefer to do it by hand? `cd relay && go build -o
+claude-pulse-relay ./cmd/claude-pulse-relay` — note the `cd`, the Go module lives in
+`relay/`, not the repo root.
 
-**2. Install the watch app** from the Connect IQ Store, then open **Garmin Connect →
+**2. Start it:**
+
+```bash
+claude-pulse-relay
+```
+
+It generates a config with a random token, opens a Cloudflare tunnel, and prints a URL, a
+token and a QR code. `claude-pulse-relay help` lists every command.
+
+**3. Install the watch app** from the Connect IQ Store, then open **Garmin Connect →
 Connect IQ apps → Claude Pulse → Settings** and enter that URL and token.
 
-That's it. For the cost page, also run `./claude-pulse-relay hook install` to forward
-session costs from a Claude Code statusline hook.
+That's it. Two optional extras: `claude-pulse-relay service install` keeps the relay
+running across reboots, and `claude-pulse-relay hook install` feeds the cost page from a
+Claude Code statusline hook.
 
 Full relay documentation — running as a background service, token rotation, the snapshot
 API, credential handling — lives in [relay/README.md](relay/README.md).

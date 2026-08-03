@@ -195,11 +195,22 @@ func runServiceCmd(args []string) {
 		}
 		logPath := filepath.Join(pulseHome, "relay.log")
 
+		// A service inherits none of this shell's environment, so the PATH it
+		// will run with has to be baked in — otherwise cloudflared, which is
+		// usually in a Homebrew prefix, is invisible and the relay starts with
+		// no tunnel on localhost only.
+		var required []string
+		cfPath, cfErr := exec.LookPath("cloudflared")
+		if cfErr == nil {
+			required = append(required, cfPath)
+		}
+		envPath := service.EnvPath(os.Getenv("PATH"), required...)
+
 		var content string
 		if runtime.GOOS == "darwin" {
-			content = service.PlistContent(exePath, logPath)
+			content = service.PlistContent(exePath, logPath, envPath)
 		} else {
-			content = service.UnitContent(exePath)
+			content = service.UnitContent(exePath, envPath)
 		}
 
 		// Best-effort stop of any existing instance so install is idempotent.
@@ -226,6 +237,17 @@ func runServiceCmd(args []string) {
 			log.Fatalf("failed to load service: %v\n%s", err, out)
 		}
 		fmt.Printf("installed and started service: %s\n", path)
+		if cfErr != nil {
+			fmt.Printf("\nwarning: cloudflared is not installed, so the relay will start\n"+
+				"  without a tunnel and listen on localhost only — the watch cannot reach\n"+
+				"  it that way. Install it, then re-run '%s service install':\n", exePath)
+			if runtime.GOOS == "darwin" {
+				fmt.Println("    brew install cloudflared")
+			} else {
+				fmt.Println("    https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/")
+			}
+			fmt.Println()
+		}
 		if runtime.GOOS == "darwin" {
 			fmt.Printf("pairing QR + URL will appear in: %s\n   view with: tail -f %s\n", logPath, logPath)
 		} else {

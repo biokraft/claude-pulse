@@ -76,12 +76,34 @@ claude-pulse-relay
 It generates a config with a random token, opens a Cloudflare tunnel, and prints a URL, a
 token and a QR code. `claude-pulse-relay help` lists every command.
 
-**3. Install the watch app** from the Connect IQ Store, then open **Garmin Connect →
-Connect IQ apps → Claude Pulse → Settings** and enter that URL and token.
+**It stays in the foreground — that is not a hang.** The relay is a daemon; it has to
+keep running to poll Anthropic and answer the watch. `Ctrl-C` shuts it down cleanly (no
+data loss), but the watch stops updating until you start it again. Step 4 gets it out of
+your terminal for good.
 
-That's it. Two optional extras: `claude-pulse-relay service install` keeps the relay
-running across reboots, and `claude-pulse-relay hook install` feeds the cost page from a
-Claude Code statusline hook.
+**3. Install the watch app** from the Connect IQ Store, then scan the QR code with your
+phone. That opens a pairing page with the URL and token and a copy button for each —
+paste both into **Garmin Connect → Connect IQ apps → Claude Pulse → Settings**.
+
+**4. Run it in the background** so it survives reboots and stops occupying a terminal:
+
+```bash
+claude-pulse-relay service install     # launchd (macOS) or systemd user unit (Linux)
+```
+
+The pairing QR then goes to a log instead of your screen — `tail -f
+~/.claude-pulse/relay.log` on macOS, `journalctl --user -u claude-pulse-relay -f` on
+Linux.
+
+Optionally, `claude-pulse-relay hook install` feeds the cost page from a Claude Code
+statusline hook.
+
+> **Every relay restart changes your URL.** Cloudflare quick tunnels get a fresh random
+> hostname each time the relay starts — including after an upgrade or a reboot — so the
+> URL in your watch settings goes stale and the watch silently stops updating. Re-scan
+> the newest QR code and update the settings when that happens. Running as a service
+> makes restarts rare; a named tunnel or Tailscale with `--no-tunnel` avoids it entirely
+> (see [relay/README.md](relay/README.md)).
 
 Full relay documentation — running as a background service, token rotation, the snapshot
 API, credential handling — lives in [relay/README.md](relay/README.md).
@@ -122,6 +144,39 @@ the store upload folder; [`CLAUDE.md`](CLAUDE.md) explains both.
 
 Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). For anything
 security-related, [SECURITY.md](SECURITY.md) has the disclosure process.
+
+## Troubleshooting
+
+**The watch isn't updating.** Almost always a stale tunnel URL. Check the relay itself
+first — this needs no token, and proves the tunnel is up and the server is answering:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' https://<your-url>.trycloudflare.com/api/v1/snapshot
+```
+
+- **`401`** — the relay is healthy and reachable. The problem is in the watch settings:
+  the URL there is stale (it changes on every restart) or the token is wrong. Re-scan the
+  newest QR code and re-enter both.
+- **`200`** — you left the token off and still got data, which should be impossible.
+  Please [open an issue](https://github.com/biokraft/claude-pulse/issues/new/choose).
+- **Connection error / timeout** — the tunnel is down. Restart the relay, or check
+  `cloudflared` is installed.
+
+With the settings correct, give it up to five minutes: the watch fetches on Connect IQ's
+background schedule, through the paired phone, so the phone needs to be in range with
+Garmin Connect installed. A page showing `synced Nm ago` means the watch has data but the
+last fetch failed.
+
+**The terminal is stuck on the QR code.** It isn't — the relay runs in the foreground by
+design. `Ctrl-C` stops it cleanly; `claude-pulse-relay service install` moves it to the
+background permanently.
+
+**The cost page shows $0.** Expected until you run `claude-pulse-relay hook install`;
+cost comes from a Claude Code statusline hook, not the usage API.
+
+**Everything reads `--` or the app looks frozen.** The relay has never completed a poll.
+Run it in a terminal and read the log: usually expired Claude Code credentials, fixed by
+logging in with Claude Code again.
 
 ## Found a bug? Please open an issue
 

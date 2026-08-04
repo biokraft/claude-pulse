@@ -29,6 +29,25 @@ module Snap {
         return (nowEpoch - (stored["fetchedEpoch"] as Number)) / 60;
     }
 
+    // "synced 492m ago" is a number the wearer has to divide in their head.
+    // Roll minutes up into hours and days the way the reset countdown already
+    // does, and drop the "ago" when the answer is "just now".
+    function syncedLabel(mins as Number) as String {
+        if (mins < 0) { return "never synced"; }
+        if (mins < 1) { return "synced just now"; }
+        if (mins < 60) { return "synced " + mins.format("%d") + "m ago"; }
+        if (mins < 1440) {
+            var h = mins / 60;
+            var m = mins % 60;
+            if (m == 0) { return "synced " + h.format("%d") + "h ago"; }
+            return "synced " + h.format("%d") + "h " + m.format("%d") + "m ago";
+        }
+        var days = mins / 1440;
+        var hrs = (mins % 1440) / 60;
+        if (hrs == 0) { return "synced " + days.format("%d") + "d ago"; }
+        return "synced " + days.format("%d") + "d " + hrs.format("%d") + "h ago";
+    }
+
     function countdown(resetsAtEpoch as Number, nowEpoch as Number) as String {
         var secs = resetsAtEpoch - nowEpoch;
         if (secs <= 0) { return "now"; }

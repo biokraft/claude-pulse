@@ -102,10 +102,16 @@ script prints each file's size at the end — check that column before uploading
 
 ## Fake data
 
-The simulator has no relay, so `ClaudePulseApp.seedFakeDataForScreenshots()` writes a
-snapshot via `Snap.save(...)` matching the mockup's values (68 % / 42 %, 2 jobs,
-$14.82, 2.1M tokens). It is a temporary dev aid: **remove the function and its call in
-`onStart()` before any real build or store export.**
+The simulator has no relay, so every page would render `--`. `scripts/shoot-pages.sh`
+generates `watch/source/_ScreenshotSeed.mc` with the mockup's values (68 % / 42 %, 2
+jobs, $14.82, 2.1M tokens, a 7-day cost series) and injects a call in `onStart()`, then
+deletes both on exit via its trap.
+
+It is generated rather than committed on purpose. The previous version of this was a
+`seedFakeDataForScreenshots()` function living in `ClaudePulseApp.mc` with a note here
+saying "remember to delete it before a store export" — precisely the kind of thing that
+eventually ships fake data to real users. Nothing to remember now: the tree is clean
+whether or not the script succeeds. Verify with `git status watch/` after running it.
 
 ## Releases — required for every feature
 

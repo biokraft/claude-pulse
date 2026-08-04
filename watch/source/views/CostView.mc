@@ -78,7 +78,7 @@ class CostView extends WatchUi.View {
             var mins = Snap.ageMinutes(stored, nowEpoch);
             dc.setColor(Chrome.DIM, Graphics.COLOR_BLACK);
             dc.drawText(w / 2, h - (44 * scale).toNumber() - fh, Graphics.FONT_XTINY,
-                "synced " + mins + "m ago", Graphics.TEXT_JUSTIFY_CENTER);
+                Snap.syncedLabel(mins), Graphics.TEXT_JUSTIFY_CENTER);
         }
 
         Chrome.drawPageDots(dc, 2, accent);

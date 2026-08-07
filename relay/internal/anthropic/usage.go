@@ -31,6 +31,21 @@ type UsagePoller struct {
 	interval time.Duration
 	hasData  bool
 	polling  bool
+
+	// statePath persists the poll schedule across restarts; see pollstate.go.
+	statePath string
+
+	// Logf reports why a poll failed. Every failure path here used to return
+	// silently, so a relay with expired credentials or a changed endpoint
+	// looked identical to a healthy one: the watch just showed "--" forever
+	// and the log said nothing. Never log the access token.
+	Logf func(format string, args ...any)
+}
+
+func (p *UsagePoller) logf(format string, args ...any) {
+	if p.Logf != nil {
+		p.Logf(format, args...)
+	}
 }
 
 func NewUsagePoller(baseURL string, creds func() (Credentials, error)) *UsagePoller {
@@ -56,9 +71,12 @@ func (p *UsagePoller) Poll(now time.Time) {
 	// Fetch credentials and make HTTP request (unlocked).
 	c, err := p.creds()
 	if err != nil {
+		p.logf("usage poll: cannot read Claude Code credentials: %v "+
+			"(log in with Claude Code, then restart the relay)", err)
 		p.mu.Lock()
 		p.interval = baseInterval
 		p.nextDue = now.Add(baseInterval)
+		p.saveState()
 		p.mu.Unlock()
 		return
 	}
@@ -66,9 +84,11 @@ func (p *UsagePoller) Poll(now time.Time) {
 	req.Header.Set("Authorization", "Bearer "+c.AccessToken)
 	resp, err := p.client.Do(req)
 	if err != nil {
+		p.logf("usage poll: request to Anthropic failed: %v", err)
 		p.mu.Lock()
 		p.interval = baseInterval
 		p.nextDue = now.Add(baseInterval)
+		p.saveState()
 		p.mu.Unlock()
 		return
 	}
@@ -76,19 +96,27 @@ func (p *UsagePoller) Poll(now time.Time) {
 
 	// Decode response (unlocked).
 	if resp.StatusCode == http.StatusTooManyRequests {
+		p.logf("usage poll: rate limited by Anthropic, backing off")
 		p.mu.Lock()
 		p.interval *= 2
 		if p.interval > maxInterval {
 			p.interval = maxInterval
 		}
 		p.nextDue = now.Add(p.interval)
+		p.saveState()
 		p.mu.Unlock()
 		return
 	}
 	if resp.StatusCode != http.StatusOK {
+		hint := ""
+		if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
+			hint = " (credentials look expired — log in with Claude Code again)"
+		}
+		p.logf("usage poll: Anthropic returned HTTP %d%s", resp.StatusCode, hint)
 		p.mu.Lock()
 		p.interval = baseInterval
 		p.nextDue = now.Add(baseInterval)
+		p.saveState()
 		p.mu.Unlock()
 		return
 	}
@@ -104,9 +132,12 @@ func (p *UsagePoller) Poll(now time.Time) {
 		} `json:"seven_day"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
+		p.logf("usage poll: could not decode Anthropic's response: %v "+
+			"(the undocumented usage endpoint may have changed)", err)
 		p.mu.Lock()
 		p.interval = baseInterval
 		p.nextDue = now.Add(baseInterval)
+		p.saveState()
 		p.mu.Unlock()
 		return
 	}
@@ -121,6 +152,7 @@ func (p *UsagePoller) Poll(now time.Time) {
 	p.hasData = true
 	p.interval = baseInterval
 	p.nextDue = now.Add(baseInterval)
+	p.saveState()
 	p.mu.Unlock()
 }
 

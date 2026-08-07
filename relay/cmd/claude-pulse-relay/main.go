@@ -100,6 +100,10 @@ func main() {
 	poller := anthropic.NewUsagePoller(*base, func() (anthropic.Credentials, error) {
 		return anthropic.LoadCredentials()
 	})
+	poller.Logf = log.Printf
+	// Persist the poll schedule so restarts honour any backoff already earned;
+	// without this an upgrade loop re-triggers Anthropic's rate limiting.
+	poller.StateFile(filepath.Join(cfg.Dir, "poll-state.json"))
 	go func() {
 		for {
 			poller.Poll(time.Now())

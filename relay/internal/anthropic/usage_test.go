@@ -3,6 +3,8 @@ package anthropic
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -149,5 +151,83 @@ func TestPollNon429ErrorResetsBackoff(t *testing.T) {
 	}
 	if !p.nextDue.Equal(t2.Add(10 * time.Minute)) {
 		t.Fatalf("nextDue = %v, want %v", p.nextDue, t2.Add(10*time.Minute))
+	}
+}
+
+// Backoff lived only in memory, so restarting the relay polled Anthropic
+// immediately every time. A few upgrades in a row was enough to earn a 429,
+// and each restart renewed the ban instead of waiting it out.
+func TestPollScheduleSurvivesRestart(t *testing.T) {
+	dir := t.TempDir()
+	statePath := filepath.Join(dir, "poll-state.json")
+	now := time.Date(2026, 8, 7, 12, 0, 0, 0, time.UTC)
+
+	calls := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		w.WriteHeader(http.StatusTooManyRequests)
+	}))
+	defer srv.Close()
+
+	creds := func() (Credentials, error) { return Credentials{AccessToken: "t"}, nil }
+
+	first := NewUsagePoller(srv.URL, creds)
+	first.StateFile(statePath)
+	first.Poll(now) // gets 429 and backs off
+	if calls != 1 {
+		t.Fatalf("first poller made %d calls, want 1", calls)
+	}
+
+	// A fresh poller stands in for the relay being restarted.
+	second := NewUsagePoller(srv.URL, creds)
+	second.StateFile(statePath)
+	second.Poll(now.Add(time.Minute))
+
+	if calls != 1 {
+		t.Fatalf("calls = %d — the restarted poller ignored the backoff and hit Anthropic again", calls)
+	}
+}
+
+// A missing or corrupt state file must not stop the relay polling at all.
+func TestPollStateToleratesBadFile(t *testing.T) {
+	dir := t.TempDir()
+	bad := filepath.Join(dir, "poll-state.json")
+	if err := os.WriteFile(bad, []byte("not json"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	calls := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		w.Write([]byte(`{"five_hour":{"utilization":10},"seven_day":{"utilization":20}}`))
+	}))
+	defer srv.Close()
+
+	p := NewUsagePoller(srv.URL, func() (Credentials, error) { return Credentials{AccessToken: "t"}, nil })
+	p.StateFile(bad)
+	p.Poll(time.Now())
+
+	if calls != 1 {
+		t.Fatalf("calls = %d, want 1 — a corrupt state file must not disable polling", calls)
+	}
+}
+
+// A tampered file must not be able to make the relay poll harder than default.
+func TestPollStateCannotShortenTheInterval(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "poll-state.json")
+	if err := os.WriteFile(path,
+		[]byte(`{"next_due":"2000-01-01T00:00:00Z","interval":1}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	p := NewUsagePoller("http://127.0.0.1:1", func() (Credentials, error) { return Credentials{}, nil })
+	p.StateFile(path)
+
+	p.mu.Lock()
+	got := p.interval
+	p.mu.Unlock()
+	if got < baseInterval {
+		t.Errorf("interval = %v, want at least the %v default", got, baseInterval)
 	}
 }

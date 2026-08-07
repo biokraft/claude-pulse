@@ -11,8 +11,14 @@ import (
 type Config struct {
 	Token  string `json:"token"`
 	Listen string `json:"listen"`
-	DBPath string `json:"-"`
-	Dir    string `json:"-"`
+	// NoTunnel makes the relay skip its built-in quick tunnel, the same as the
+	// --no-tunnel flag. It exists as config because an installed service runs
+	// with no arguments: without it, a launchd or systemd relay always opens a
+	// quick tunnel, which competes with a Tailscale Funnel or any other
+	// front-end the user has put in place.
+	NoTunnel bool   `json:"no_tunnel,omitempty"`
+	DBPath   string `json:"-"`
+	Dir      string `json:"-"`
 }
 
 // Home returns the claude-pulse home directory: $CLAUDE_PULSE_HOME if set,

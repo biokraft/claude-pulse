@@ -26,6 +26,44 @@ SDK="$(ls -d "$HOME/Library/Application Support/Garmin/ConnectIQ/Sdks"/*/bin | t
 
 `fr57047mm` is the device to develop against — it is the watch actually owned.
 
+## Development tunnel
+
+The relay's built-in tunnel (`cloudflared` quick tunnel) is fine for real use but
+painful for development: its URL rotates on every restart, forcing a re-pair, and it
+can die silently — a `cloudflared` process exiting while the relay keeps running,
+leaving the watch stuck on a dead URL with nothing in the log to explain why.
+
+For development, front the relay with a Tailscale Funnel instead. It gives a
+permanent HTTPS URL at `https://<your-machine>.<your-tailnet>.ts.net`, so the watch is
+paired once and stays paired across restarts.
+
+```bash
+# One-time: your tailnet's ACL needs Funnel enabled for this device
+#   nodeAttrs: ["funnel"]   — set in the admin console
+
+# Start the relay locally (default port 8787), then front it:
+scripts/dev-tunnel.sh
+
+# Stop the Funnel when done:
+tailscale funnel --https=443 off
+```
+
+`scripts/dev-tunnel.sh` derives the hostname from `tailscale status --json` at
+runtime and prints the pairing URL and token — it never hardcodes a hostname,
+since this repo is public.
+
+If a relay service is installed (`~/Library/LaunchAgents/com.claudepulse.relay.plist`
+or `~/.config/systemd/user/claude-pulse-relay.service`), it opens its own quick tunnel
+and competes with the Funnel. A service runs with no arguments, so `--no-tunnel` cannot
+reach it; set it in the config instead:
+
+```bash
+jq '.no_tunnel = true' ~/.claude-pulse/config.json > /tmp/c && mv /tmp/c ~/.claude-pulse/config.json
+claude-pulse-relay service install    # reload
+```
+
+That file lives outside the repository, so nothing machine-specific is ever committed.
+
 ## Design workflow
 
 The mockup in `design/mockup.dc.html`

@@ -122,7 +122,9 @@ func main() {
 	// the latest tunnel rather than a stale one it captured before a restart.
 	var tnMu sync.Mutex
 	var tn *tunnel.Tunnel
-	if !*noTunnel {
+	// The config setting matters for services, which run with no arguments and
+	// so can never pass --no-tunnel.
+	if !*noTunnel && !cfg.NoTunnel {
 		tn, err = tunnel.Start(cfg.Listen, cfg.Token, os.Stdout)
 		if err != nil {
 			log.Printf("tunnel disabled: %v", err)

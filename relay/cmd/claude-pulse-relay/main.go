@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -114,6 +115,12 @@ func main() {
 		},
 	})
 
+	// tn is read and reassigned from two goroutines once the supervisor is
+	// running: the supervisor's Restart closure replaces it after cloudflared
+	// dies, and the main goroutine's shutdown path stops whatever is current.
+	// tnMu keeps those two accesses from racing, and guarantees shutdown stops
+	// the latest tunnel rather than a stale one it captured before a restart.
+	var tnMu sync.Mutex
 	var tn *tunnel.Tunnel
 	if !*noTunnel {
 		tn, err = tunnel.Start(cfg.Listen, cfg.Token, os.Stdout)
@@ -121,6 +128,35 @@ func main() {
 			log.Printf("tunnel disabled: %v", err)
 			tn = nil
 		}
+	}
+
+	var cancelSup context.CancelFunc
+	if tn != nil {
+		sup := &tunnel.Supervisor{
+			Probe: tunnel.HTTPProbe(&http.Client{Timeout: 10 * time.Second}),
+			Restart: func(ctx context.Context) (string, error) {
+				tnMu.Lock()
+				current := tn
+				tnMu.Unlock()
+				current.Stop()
+
+				fresh, err := tunnel.Start(cfg.Listen, cfg.Token, os.Stdout)
+				if err != nil {
+					return "", err
+				}
+
+				tnMu.Lock()
+				tn = fresh
+				tnMu.Unlock()
+
+				log.Printf("tunnel public URL changed to %s — update the watch's relay URL setting", fresh.URL)
+				return fresh.URL, nil
+			},
+			Logf: log.Printf,
+		}
+		var supCtx context.Context
+		supCtx, cancelSup = context.WithCancel(context.Background())
+		go sup.Run(supCtx, tn.URL)
 	}
 
 	srv := &http.Server{Addr: cfg.Listen, Handler: h}
@@ -151,8 +187,14 @@ func main() {
 		}
 	}
 
-	if tn != nil {
-		tn.Stop()
+	if cancelSup != nil {
+		cancelSup()
+	}
+	tnMu.Lock()
+	final := tn
+	tnMu.Unlock()
+	if final != nil {
+		final.Stop()
 	}
 	st.Close()
 	os.Exit(exitCode)

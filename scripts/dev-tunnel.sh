@@ -71,6 +71,11 @@ host="$(printf '%s' "$status_json" | jq -r '.Self.DNSName // empty' | sed 's/\.$
 # --------------------------------------------------------------- funnel ----
 
 step "Starting Funnel on port $PORT"
+# The first time Funnel is used on a tailnet it is disabled, and the CLI prints
+# an enable link and then BLOCKS, polling until you click it. Without this note
+# the script looks frozen.
+info "first run on a tailnet? Tailscale prints an enable link and waits here"
+info "until you open it — that pause is expected, not a hang."
 if ! tailscale funnel --bg "$PORT"; then
   echo
   warn "Funnel failed to start. Your tailnet policy likely needs to allow it:"
@@ -85,13 +90,20 @@ ok "Funnel is running"
 
 # ------------------------------------------------------------- service ----
 
+config_file_hint="${CLAUDE_PULSE_HOME:-\$HOME/.claude-pulse}/config.json"
 launchd_unit="$HOME/Library/LaunchAgents/com.claudepulse.relay.plist"
 systemd_unit="$HOME/.config/systemd/user/claude-pulse-relay.service"
 if [ -f "$launchd_unit" ] || [ -f "$systemd_unit" ]; then
-  warn "an installed relay service was found — it opens its own quick tunnel"
-  warn "unless started with --no-tunnel, and will compete with this Funnel."
-  info "The config file lives outside this repository. Pass --no-tunnel to the"
-  info "service's relay command (see the relay's --help) to disable its tunnel."
+  # A service runs with no arguments, so --no-tunnel cannot reach it; the
+  # config setting is the only lever.
+  warn "an installed relay service was found — it opens its own quick tunnel,"
+  warn "which competes with this Funnel. Disable it with:"
+  info ""
+  info "    jq '.no_tunnel = true' \"$config_file_hint\" > /tmp/c && mv /tmp/c \"$config_file_hint\""
+  info "    claude-pulse-relay service install    # reload"
+  info ""
+  info "That config lives outside this repository, so nothing machine-specific"
+  info "is ever committed."
 fi
 
 # -------------------------------------------------------------- pairing ----

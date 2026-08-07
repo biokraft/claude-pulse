@@ -10,6 +10,9 @@ jobs:
     defaults: { run: { working-directory: relay } }
     steps:
       - uses: actions/checkout@v4
+      - name: Check for leaked personal data
+        working-directory: .
+        run: bash scripts/check-no-leaks.sh
       - uses: actions/setup-go@v5
         with: { go-version: "1.25" }
       - name: Check formatting

@@ -98,3 +98,52 @@ func TestIngestPrunesIdleSessions(t *testing.T) {
 		t.Fatalf("cost = %v, want 2.50 (old-session must have been pruned)", got[0].CostUSD)
 	}
 }
+
+// The bug this guards: the already-counted totals used to live in a map in the
+// handler, so a relay restart forgot them and re-counted a long-running
+// session's entire cumulative cost as one delta.
+func TestIngestDoesNotDoubleCountAfterARestart(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "t.db")
+	day := func() string { return "2026-07-27" }
+	clock := func() time.Time { return time.Date(2026, 7, 27, 10, 0, 0, 0, time.UTC) }
+
+	post := func(h http.Handler, body string) {
+		t.Helper()
+		req := httptest.NewRequest("POST", "/ingest/statusline", strings.NewReader(body))
+		rr := httptest.NewRecorder()
+		h.ServeHTTP(rr, req)
+		if rr.Code != http.StatusNoContent {
+			t.Fatalf("code %d", rr.Code)
+		}
+	}
+	const payload = `{"session_id":"long-lived","cost":{"total_cost_usd":79.73},
+		"context_window":{"input_tokens":1000,"output_tokens":500}}`
+
+	st, err := store.Open(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	post(IngestHandler(st, day, clock), payload)
+	if err := st.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	// The relay restarts; the same session posts its cumulative total again.
+	st2, err := store.Open(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer st2.Close()
+	post(IngestHandler(st2, day, clock), payload)
+
+	got, err := st2.Daily("2026-07-27", 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got[0].CostUSD != 79.73 {
+		t.Errorf("cost = %v, want 79.73 counted exactly once", got[0].CostUSD)
+	}
+	if got[0].Tokens != 1500 {
+		t.Errorf("tokens = %v, want 1500 counted exactly once", got[0].Tokens)
+	}
+}

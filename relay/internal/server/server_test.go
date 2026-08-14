@@ -16,7 +16,9 @@ func testHandler(t *testing.T) *httptest.Server {
 	t.Helper()
 	st, _ := store.Open(filepath.Join(t.TempDir(), "t.db"))
 	t.Cleanup(func() { st.Close() })
-	st.AddCost("2026-07-27", 14.82, 2100000)
+	if _, _, err := st.RecordSession("2026-07-27", "seed", 14.82, 2100000, time.Now()); err != nil {
+		t.Fatal(err)
+	}
 	fetched := time.Date(2026, 7, 27, 10, 0, 0, 0, time.UTC)
 	h := New("sekret", st, Providers{
 		Usage: func(now time.Time) (anthropic.Usage, time.Time, bool) {

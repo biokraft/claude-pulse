@@ -119,6 +119,7 @@ func main() {
 
 	h := server.New(cfg.Token, st, server.Providers{
 		Usage:    poller.Current,
+		LastCost: st.LastCostAt,
 		Activity: func() (bool, int) { return activity.Check(*jobsDir) },
 		Daily: func() ([]store.DayTotal, error) {
 			return st.Daily(time.Now().UTC().Format("2006-01-02"), 7)
@@ -386,23 +387,16 @@ func runStatusCmd(args []string) {
 		// A status report is still worth printing without this one line.
 		svcPath = ""
 	}
-	home, _ := os.UserHomeDir()
-	settingsPath := ""
-	if home != "" {
-		settingsPath = filepath.Join(home, ".claude", "settings.json")
-	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	report := status.Gather(ctx, status.Options{
-		Dir:          cfg.Dir,
-		Listen:       cfg.Listen,
-		Token:        cfg.Token,
-		NoTunnel:     cfg.NoTunnel,
-		ServicePath:  svcPath,
-		SettingsPath: settingsPath,
-		PublicURL:    *publicURL,
+		Dir:         cfg.Dir,
+		Listen:      cfg.Listen,
+		Token:       cfg.Token,
+		NoTunnel:    cfg.NoTunnel,
+		ServicePath: svcPath,
+		PublicURL:   *publicURL,
 	})
 	status.Render(os.Stdout, report)
 

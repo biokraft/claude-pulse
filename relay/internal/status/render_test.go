@@ -108,3 +108,23 @@ func TestShort(t *testing.T) {
 		}
 	}
 }
+
+// The old check looked for our command in Claude Code's settings, which
+// reported a working setup as broken whenever the user chained the post inside
+// their own statusline script. What matters is whether cost actually arrives.
+func TestRenderReportsCostFromWhatArrived(t *testing.T) {
+	now := time.Date(2026, 8, 14, 12, 0, 0, 0, time.UTC)
+	base := Report{Now: now, LocalUp: true, TokenLen: 32, NoTunnel: true}
+
+	working := base
+	working.Snap = &Snapshot{CostLastAt: now.Add(-2 * time.Minute).Format(time.RFC3339)}
+	if out := renderTo(working); !strings.Contains(out, "statusline hook is working") {
+		t.Errorf("want cost reported as arriving, got:\n%s", out)
+	}
+
+	silent := base
+	silent.Snap = &Snapshot{}
+	if out := renderTo(silent); !strings.Contains(out, "never received") {
+		t.Errorf("want cost reported as never received, got:\n%s", out)
+	}
+}

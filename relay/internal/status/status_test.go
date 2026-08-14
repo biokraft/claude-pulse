@@ -136,33 +136,6 @@ func TestGatherReadsTheBackoffSchedule(t *testing.T) {
 	}
 }
 
-func TestHookDetection(t *testing.T) {
-	dir := t.TempDir()
-	installed := filepath.Join(dir, "installed.json")
-	writeFile(t, installed,
-		`{"statusLine":{"type":"command","command":"sh -c 'curl .../ingest/statusline?token=x'"}}`)
-	other := filepath.Join(dir, "other.json")
-	writeFile(t, other, `{"statusLine":{"type":"command","command":"my-own-statusline"}}`)
-
-	cases := []struct {
-		name string
-		path string
-		want bool
-	}{
-		{"ours", installed, true},
-		{"someone else's statusline", other, false},
-		{"no settings file", filepath.Join(dir, "missing.json"), false},
-		{"no path given", "", false},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			if got := hookInstalled(tc.path); got != tc.want {
-				t.Errorf("hookInstalled(%s) = %v, want %v", tc.name, got, tc.want)
-			}
-		})
-	}
-}
-
 func TestRuntimeReceiptRoundTrips(t *testing.T) {
 	dir := t.TempDir()
 

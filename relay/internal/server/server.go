@@ -14,6 +14,7 @@ import (
 
 type Providers struct {
 	Usage    func(now time.Time) (anthropic.Usage, time.Time, bool)
+	LastCost func() (time.Time, bool)
 	Activity func() (bool, int)
 	Daily    func() ([]store.DayTotal, error)
 }
@@ -74,6 +75,12 @@ func New(token string, st *store.Store, p Providers) http.Handler {
 			http.Error(w, "store error", http.StatusInternalServerError)
 			return
 		}
+		costAt := ""
+		if p.LastCost != nil {
+			if t, ok := p.LastCost(); ok {
+				costAt = t.UTC().Format(time.RFC3339)
+			}
+		}
 		today := store.DayTotal{}
 		if len(daily) > 0 {
 			today = daily[len(daily)-1]
@@ -90,6 +97,7 @@ func New(token string, st *store.Store, p Providers) http.Handler {
 			"today_tokens":        today.Tokens,
 			"daily":               daily,
 			"fetched_at":          fetched.UTC().Format(time.RFC3339),
+			"cost_last_at":        costAt,
 			"stale":               stale,
 		}); err != nil {
 			// Headers already sent; only option is to log.

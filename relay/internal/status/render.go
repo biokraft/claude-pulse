@@ -107,10 +107,17 @@ func Render(w io.Writer, r Report) {
 	} else {
 		line("service", "not installed — the relay only runs while a terminal is open")
 	}
-	if r.HookInstalled {
-		good("cost hook", "installed in Claude Code")
-	} else {
-		line("cost hook", "not installed — cost and token pages stay empty ('hook install')")
+	// Whether the hook is wired up is inferred from whether cost has actually
+	// arrived. Looking for our command in Claude Code's settings answers a
+	// different question: it misses a user who chains the post inside their own
+	// statusline script, and passes a settings entry that posts nowhere.
+	switch {
+	case r.Snap == nil:
+		line("cost data", "unknown — the snapshot could not be read")
+	case r.Snap.CostLastAt == "":
+		line("cost data", "never received — cost and token pages stay empty ('hook install')")
+	default:
+		good("cost data", ageOf(r.Snap.CostLastAt, r.Now)+" (statusline hook is working)")
 	}
 
 	problems := r.Problems()

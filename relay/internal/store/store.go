@@ -119,3 +119,23 @@ func (s *Store) RecordSession(day, sessionID string, totalCost float64, totalTok
 	}
 	return dCost, dTokens, nil
 }
+
+// LastCostAt returns when a statusline payload was last ingested, and whether
+// there has ever been one.
+//
+// This is what "is the cost hook working?" actually means. Looking for our
+// command in Claude Code's settings answers a different question and gets it
+// wrong in both directions: a user who chains our post inside their own
+// statusline script is reported as not set up, and a settings entry pointing at
+// a relay that never receives anything is reported as fine.
+func (s *Store) LastCostAt() (time.Time, bool) {
+	var raw sql.NullString
+	if err := s.db.QueryRow(`SELECT MAX(last) FROM sessions`).Scan(&raw); err != nil || !raw.Valid {
+		return time.Time{}, false
+	}
+	t, err := time.Parse(time.RFC3339, raw.String)
+	if err != nil {
+		return time.Time{}, false
+	}
+	return t, true
+}

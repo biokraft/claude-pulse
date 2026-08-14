@@ -30,6 +30,7 @@ type Snapshot struct {
 	TodayCostUSD float64 `json:"today_cost_usd"`
 	TodayTokens  int64   `json:"today_tokens"`
 	FetchedAt    string  `json:"fetched_at"`
+	CostLastAt   string  `json:"cost_last_at"`
 	Stale        bool    `json:"stale"`
 }
 
@@ -74,7 +75,6 @@ type Report struct {
 
 	ServicePath      string
 	ServiceInstalled bool
-	HookInstalled    bool
 }
 
 // Options are the inputs Gather needs. They are all explicit so tests can point
@@ -85,14 +85,13 @@ type Options struct {
 	// a user who fronts the relay themselves (a Tailscale Funnel, a reverse
 	// proxy) gets the reachability check at all: there is no receipt to read,
 	// because nothing the relay started owns that address.
-	PublicURL    string
-	Listen       string
-	Token        string
-	NoTunnel     bool
-	ServicePath  string
-	SettingsPath string
-	Client       *http.Client
-	Now          time.Time
+	PublicURL   string
+	Listen      string
+	Token       string
+	NoTunnel    bool
+	ServicePath string
+	Client      *http.Client
+	Now         time.Time
 }
 
 // Gather collects the report. It never returns an error: an unreachable relay
@@ -160,8 +159,6 @@ func Gather(ctx context.Context, o Options) Report {
 			r.ServiceInstalled = true
 		}
 	}
-	r.HookInstalled = hookInstalled(o.SettingsPath)
-
 	return r
 }
 
@@ -222,28 +219,6 @@ func readPollState(path string) (time.Time, time.Duration) {
 		return time.Time{}, 0
 	}
 	return s.NextDue, s.Interval
-}
-
-// hookInstalled reports whether Claude Code's settings carry a statusLine that
-// posts to this relay. Any statusLine pointing at /ingest/statusline is ours;
-// matching the exact command would report "missing" after the user edits it.
-func hookInstalled(settingsPath string) bool {
-	if settingsPath == "" {
-		return false
-	}
-	b, err := os.ReadFile(settingsPath)
-	if err != nil {
-		return false
-	}
-	var m struct {
-		StatusLine struct {
-			Command string `json:"command"`
-		} `json:"statusLine"`
-	}
-	if err := json.Unmarshal(b, &m); err != nil {
-		return false
-	}
-	return strings.Contains(m.StatusLine.Command, "/ingest/statusline")
 }
 
 // Problems lists what is wrong, in the order a user should fix it. An empty

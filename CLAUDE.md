@@ -48,6 +48,15 @@ scripts/dev-tunnel.sh
 tailscale funnel --https=443 off
 ```
 
+To check the whole chain — relay, that Funnel, the usage poll — in one shot:
+
+```bash
+claude-pulse-relay status -url "https://$(tailscale status --json | jq -r .Self.DNSName | sed 's/\.$//')"
+```
+
+`-url` is needed because with `no_tunnel` set the relay starts no tunnel of its own,
+so there is no recorded URL for `status` to check.
+
 `scripts/dev-tunnel.sh` derives the hostname from `tailscale status --json` at
 runtime and prints the pairing URL and token — it never hardcodes a hostname,
 since this repo is public.

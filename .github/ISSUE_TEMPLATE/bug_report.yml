@@ -54,6 +54,15 @@ body:
       required: true
 
   - type: textarea
+    id: status
+    attributes:
+      label: "`claude-pulse-relay status` output"
+      description: >
+        Run it and paste the whole report. It never prints your token, and it
+        answers most of what we would otherwise have to ask you.
+      render: shell
+
+  - type: textarea
     id: logs
     attributes:
       label: Relevant log output

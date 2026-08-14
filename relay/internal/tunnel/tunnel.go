@@ -9,6 +9,8 @@ import (
 	"time"
 
 	qrcode "github.com/skip2/go-qrcode"
+
+	"github.com/biokraft/claude-pulse/relay/internal/ui"
 )
 
 var urlRe = regexp.MustCompile(`https://[a-z0-9-]+\.trycloudflare\.com`)
@@ -24,7 +26,7 @@ func ParseURL(line string) (string, bool) {
 }
 
 func PrintPairing(out io.Writer, url, token string) {
-	p := paletteFor(out)
+	p := ui.For(out)
 	fmt.Fprintf(out, "\n%s%s  Claude Pulse — watch pairing%s\n\n", p.Clay, p.Bold, p.Reset)
 	fmt.Fprintf(out, "  %sRelay URL%s  %s%s%s\n", p.Muted, p.Reset, p.Cream, url, p.Reset)
 	fmt.Fprintf(out, "  %sToken%s      %s%s%s\n\n", p.Muted, p.Reset, p.Cream, token, p.Reset)

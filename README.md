@@ -147,20 +147,27 @@ security-related, [SECURITY.md](SECURITY.md) has the disclosure process.
 
 ## Troubleshooting
 
-**The watch isn't updating.** Almost always a stale tunnel URL. Check the relay itself
-first — this needs no token, and proves the tunnel is up and the server is answering:
+**Start here, whatever the symptom:**
 
 ```bash
-curl -s -o /dev/null -w '%{http_code}\n' https://<your-url>.trycloudflare.com/api/v1/snapshot
+claude-pulse-relay status
 ```
 
-- **`401`** — the relay is healthy and reachable. The problem is in the watch settings:
-  the URL there is stale (it changes on every restart) or the token is wrong. Re-scan the
-  newest QR code and re-enter both.
-- **`200`** — you left the token off and still got data, which should be impossible.
-  Please [open an issue](https://github.com/biokraft/claude-pulse/issues/new/choose).
-- **Connection error / timeout** — the tunnel is down. Restart the relay, or check
-  `cloudflared` is installed.
+It checks the relay, the tunnel, the usage poll and the cost hook, prints the URL to
+enter in the watch's settings, and ends with a list of what is wrong. It exits non-zero
+when it finds something, so it also works as a health check in a script. It never prints
+your token, so its output is safe to paste into an issue.
+
+If you front the relay yourself — a Tailscale Funnel, a reverse proxy — pass that address
+so the check covers the same route the watch takes:
+
+```bash
+claude-pulse-relay status -url https://your-host
+```
+
+**The watch isn't updating.** Almost always a stale tunnel URL: it changes every time the
+relay restarts. If `status` reports the tunnel healthy, the problem is in the watch
+settings — re-scan the newest QR code and re-enter both the URL and the token.
 
 With the settings correct, give it up to five minutes: the watch fetches on Connect IQ's
 background schedule, through the paired phone, so the phone needs to be in range with
@@ -175,8 +182,10 @@ background permanently.
 cost comes from a Claude Code statusline hook, not the usage API.
 
 **Everything reads `--` or the app looks frozen.** The relay has never completed a poll.
-Run it in a terminal and read the log: usually expired Claude Code credentials, fixed by
-logging in with Claude Code again.
+`status` shows this as `fetched: never`, and reports a raised poll interval when
+Anthropic has rate-limited the relay — in that case the fix is to wait. Otherwise read
+the log: usually expired Claude Code credentials, fixed by logging in with Claude Code
+again.
 
 ## Found a bug? Please open an issue
 

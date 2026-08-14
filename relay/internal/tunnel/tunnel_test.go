@@ -35,9 +35,3 @@ func TestPrintPairingIsPlainWhenNotATerminal(t *testing.T) {
 		t.Errorf("wrote ANSI escapes to a non-terminal:\n%q", buf.String())
 	}
 }
-
-func TestPaletteForNonTerminalIsEmpty(t *testing.T) {
-	if got := paletteFor(&bytes.Buffer{}); got != plain {
-		t.Errorf("paletteFor(buffer) = %+v, want the empty palette", got)
-	}
-}

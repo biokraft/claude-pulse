@@ -22,6 +22,7 @@ import (
 	"github.com/biokraft/claude-pulse/relay/internal/hook"
 	"github.com/biokraft/claude-pulse/relay/internal/server"
 	"github.com/biokraft/claude-pulse/relay/internal/service"
+	"github.com/biokraft/claude-pulse/relay/internal/status"
 	"github.com/biokraft/claude-pulse/relay/internal/store"
 	"github.com/biokraft/claude-pulse/relay/internal/tunnel"
 )
@@ -37,6 +38,8 @@ Usage:
   claude-pulse-relay service install      run it in the background, across reboots
   claude-pulse-relay service uninstall    stop and remove that service
   claude-pulse-relay hook install         forward session cost from Claude Code
+  claude-pulse-relay status               check the relay, tunnel and usage data
+  claude-pulse-relay status -url <url>    also check a front-end you run yourself
   claude-pulse-relay version              print the version
   claude-pulse-relay help                 print this help
 
@@ -61,6 +64,9 @@ func main() {
 			return
 		case "hook":
 			runHookCmd(os.Args[2:])
+			return
+		case "status":
+			runStatusCmd(os.Args[2:])
 			return
 		case "help", "-h", "--help":
 			fmt.Print(usageText)
@@ -135,6 +141,11 @@ func main() {
 			tn = nil
 		}
 	}
+	// `status` runs as a separate process and cannot see this URL any other
+	// way; cloudflared mints a new one on every start.
+	if tn != nil {
+		status.RecordTunnelURL(cfg.Dir, tn.URL)
+	}
 
 	var cancelSup context.CancelFunc
 	if tn != nil {
@@ -155,6 +166,7 @@ func main() {
 				tn = fresh
 				tnMu.Unlock()
 
+				status.RecordTunnelURL(cfg.Dir, fresh.URL)
 				log.Printf("tunnel public URL changed to %s — update the watch's relay URL setting", fresh.URL)
 				return fresh.URL, nil
 			},
@@ -201,6 +213,8 @@ func main() {
 	tnMu.Unlock()
 	if final != nil {
 		final.Stop()
+		// The recorded URL stops resolving the moment cloudflared exits.
+		status.ClearTunnelURL(cfg.Dir)
 	}
 	st.Close()
 	os.Exit(exitCode)
@@ -342,4 +356,47 @@ func runHookCmd(args []string) {
 		os.Exit(1)
 	}
 	fmt.Printf("installed statusline hook in %s\n", settingsPath)
+}
+
+func runStatusCmd(args []string) {
+	fs := flag.NewFlagSet("status", flag.ExitOnError)
+	publicURL := fs.String("url", "", "public URL to check as the watch's route in "+
+		"(for a Tailscale Funnel or any other front-end the relay did not start)")
+	if err := fs.Parse(args); err != nil {
+		os.Exit(2)
+	}
+
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatal(err)
+	}
+	svcPath, err := servicePath()
+	if err != nil {
+		// A status report is still worth printing without this one line.
+		svcPath = ""
+	}
+	home, _ := os.UserHomeDir()
+	settingsPath := ""
+	if home != "" {
+		settingsPath = filepath.Join(home, ".claude", "settings.json")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	report := status.Gather(ctx, status.Options{
+		Dir:          cfg.Dir,
+		Listen:       cfg.Listen,
+		Token:        cfg.Token,
+		NoTunnel:     cfg.NoTunnel,
+		ServicePath:  svcPath,
+		SettingsPath: settingsPath,
+		PublicURL:    *publicURL,
+	})
+	status.Render(os.Stdout, report)
+
+	// Non-zero on any finding, so this can be the health check in a script.
+	if len(report.Problems()) > 0 {
+		os.Exit(1)
+	}
 }

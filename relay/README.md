@@ -87,6 +87,23 @@ claude-pulse-relay service uninstall
 
 Stops and removes the installed service.
 
+## Checking on it
+
+```bash
+claude-pulse-relay status              # relay, tunnel, usage poll, cost hook
+claude-pulse-relay status -url <url>   # also check a front-end you run yourself
+```
+
+The report exits non-zero when it finds a problem, and never prints the token — so it is
+both usable as a health check and safe to paste into a bug report.
+
+Two things it surfaces that nothing else does. The public URL: the relay records it at
+`~/.claude-pulse/tunnel-url` while it runs, because `cloudflared` mints a new one on every
+start and a second process has no other way to learn it. And the poll schedule, read from
+`~/.claude-pulse/poll-state.json`: an interval above the five-minute base means Anthropic
+has rate-limited the relay, which otherwise looks exactly like a relay that has stopped
+working.
+
 ## Cost tracking (optional)
 
 The cost page on the watch is fed by a Claude Code statusline hook that

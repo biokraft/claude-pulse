@@ -41,7 +41,7 @@ func TestGatherReportsAHealthyRelay(t *testing.T) {
 		"fetched_at":"2026-08-14T11:58:00Z","stale":false}`)
 
 	dir := t.TempDir()
-	RecordTunnelURL(dir, srv.URL)
+	RecordRuntime(dir, Runtime{Listen: addrOf(t, srv), URL: srv.URL, Tunnel: true})
 
 	r := Gather(context.Background(), Options{
 		Dir: dir, Listen: addrOf(t, srv), Token: "sekret", Now: now,
@@ -86,7 +86,7 @@ func TestGatherReportsADeadRelayOnce(t *testing.T) {
 func TestGatherFlagsALiveRelayBehindADeadTunnel(t *testing.T) {
 	srv := relayStub(t, `{"stale":false,"fetched_at":"2026-08-14T11:58:00Z"}`)
 	dir := t.TempDir()
-	RecordTunnelURL(dir, "http://127.0.0.1:1")
+	RecordRuntime(dir, Runtime{Listen: addrOf(t, srv), URL: "http://127.0.0.1:1", Tunnel: true})
 
 	r := Gather(context.Background(), Options{
 		Dir: dir, Listen: addrOf(t, srv), Token: "sekret",
@@ -163,26 +163,78 @@ func TestHookDetection(t *testing.T) {
 	}
 }
 
-func TestTunnelURLReceiptRoundTrips(t *testing.T) {
+func TestRuntimeReceiptRoundTrips(t *testing.T) {
 	dir := t.TempDir()
 
-	if got := ReadTunnelURL(dir); got != "" {
-		t.Errorf("ReadTunnelURL on a fresh dir = %q, want empty", got)
-	}
-	RecordTunnelURL(dir, "https://x.trycloudflare.com")
-	if got := ReadTunnelURL(dir); got != "https://x.trycloudflare.com" {
-		t.Errorf("ReadTunnelURL = %q, want the recorded URL", got)
+	if _, ok := ReadRuntime(dir); ok {
+		t.Error("ReadRuntime on a fresh dir reported a receipt")
 	}
 
-	// Shutdown clears it: a URL that stopped resolving the moment cloudflared
-	// exited must not be reported as the address to pair against.
-	ClearTunnelURL(dir)
-	if got := ReadTunnelURL(dir); got != "" {
-		t.Errorf("ReadTunnelURL after Clear = %q, want empty", got)
+	want := Runtime{Listen: "127.0.0.1:8799", URL: "https://x.trycloudflare.com", Tunnel: true}
+	RecordRuntime(dir, want)
+	got, ok := ReadRuntime(dir)
+	if !ok || got != want {
+		t.Errorf("ReadRuntime = %+v (ok=%v), want %+v", got, ok, want)
 	}
-	// Clearing twice is what happens when the relay is killed after a clean
+
+	// A relay with no tunnel still records where it listens — that is how
+	// `status` finds a -listen override at all.
+	RecordRuntime(dir, Runtime{Listen: "127.0.0.1:9000"})
+	if got, _ := ReadRuntime(dir); got.Listen != "127.0.0.1:9000" || got.URL != "" {
+		t.Errorf("ReadRuntime = %+v, want the listen address and no URL", got)
+	}
+
+	// Shutdown clears it: an address that stopped answering the moment the
+	// relay exited must not be reported as live.
+	ClearRuntime(dir)
+	if _, ok := ReadRuntime(dir); ok {
+		t.Error("ReadRuntime after Clear reported a receipt")
+	}
+	// Clearing twice is what happens when a relay is killed after a clean
 	// shutdown already ran.
-	ClearTunnelURL(dir)
+	ClearRuntime(dir)
+}
+
+// A garbled receipt — a truncated write, a hand-edit — must not take the whole
+// report down with it.
+func TestUnreadableReceiptFallsBackToTheConfig(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, runtimeFile), "{not json")
+
+	r := Gather(context.Background(), Options{
+		Dir: dir, Listen: "127.0.0.1:1", Client: &http.Client{Timeout: time.Second},
+	})
+
+	if r.Listen != "127.0.0.1:1" {
+		t.Errorf("Listen = %q, want the configured address", r.Listen)
+	}
+	if r.ListenOverride {
+		t.Error("ListenOverride = true from an unreadable receipt")
+	}
+}
+
+// -listen is never written back to the config, so a report that trusted the
+// config would probe the wrong port — and if another relay happened to be
+// there, describe the wrong process entirely.
+func TestRecordedListenBeatsTheConfig(t *testing.T) {
+	srv := relayStub(t, `{"stale":false,"fetched_at":"2026-08-14T11:58:00Z"}`)
+	dir := t.TempDir()
+	RecordRuntime(dir, Runtime{Listen: addrOf(t, srv)})
+
+	r := Gather(context.Background(), Options{
+		Dir: dir, Listen: "127.0.0.1:1", Token: "sekret", NoTunnel: true,
+		Client: &http.Client{Timeout: time.Second},
+	})
+
+	if r.Listen != addrOf(t, srv) {
+		t.Errorf("Listen = %q, want the recorded address", r.Listen)
+	}
+	if !r.ListenOverride {
+		t.Error("ListenOverride = false, want the disagreement reported")
+	}
+	if !r.LocalUp || r.Snap == nil {
+		t.Errorf("probed the wrong address: LocalUp=%v SnapErr=%s", r.LocalUp, r.SnapErr)
+	}
 }
 
 func hasSubstring(haystack []string, needle string) bool {
@@ -206,7 +258,7 @@ func writeFile(t *testing.T, path, content string) {
 func TestPublicURLOverridesTheReceipt(t *testing.T) {
 	srv := relayStub(t, `{"stale":false,"fetched_at":"2026-08-14T11:58:00Z"}`)
 	dir := t.TempDir()
-	RecordTunnelURL(dir, "http://127.0.0.1:1") // a stale receipt, deliberately dead
+	RecordRuntime(dir, Runtime{Listen: addrOf(t, srv), URL: "http://127.0.0.1:1", Tunnel: true}) // stale URL, deliberately dead
 
 	r := Gather(context.Background(), Options{
 		Dir: dir, Listen: addrOf(t, srv), Token: "sekret", NoTunnel: true,
@@ -222,5 +274,39 @@ func TestPublicURLOverridesTheReceipt(t *testing.T) {
 	}
 	if len(r.Problems()) != 0 {
 		t.Errorf("Problems() = %v, want none", r.Problems())
+	}
+}
+
+// A missing token makes the snapshot unreadable by definition. Reporting both
+// states one root cause twice and buries the actionable half.
+func TestMissingTokenIsReportedOnce(t *testing.T) {
+	srv := relayStub(t, `{}`)
+
+	r := Gather(context.Background(), Options{
+		Dir: t.TempDir(), Listen: addrOf(t, srv), Token: "", NoTunnel: true,
+	})
+
+	problems := r.Problems()
+	if len(problems) != 1 || !strings.Contains(problems[0], "no token") {
+		t.Errorf("Problems() = %v, want exactly one 'no token' entry", problems)
+	}
+}
+
+// --no-tunnel is a flag, never written back to the config, so a relay started
+// with it would otherwise be reported as missing a tunnel it was told not to
+// open.
+func TestRecordedTunnelIntentBeatsTheConfig(t *testing.T) {
+	srv := relayStub(t, `{"stale":false,"fetched_at":"2026-08-14T11:58:00Z"}`)
+	dir := t.TempDir()
+	RecordRuntime(dir, Runtime{Listen: addrOf(t, srv), Tunnel: false})
+
+	// The config says a tunnel is wanted; the running relay says otherwise.
+	r := Gather(context.Background(), Options{
+		Dir: dir, Listen: addrOf(t, srv), Token: "sekret", NoTunnel: false,
+		Client: &http.Client{Timeout: time.Second},
+	})
+
+	if hasSubstring(r.Problems(), "tunnel") {
+		t.Errorf("Problems() = %v, want no tunnel complaint", r.Problems())
 	}
 }

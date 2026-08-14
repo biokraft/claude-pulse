@@ -125,6 +125,17 @@ func main() {
 		},
 	})
 
+	// Record where we listen before the tunnel is even attempted. Starting one
+	// takes up to 30 seconds, and a receipt left behind by a crashed
+	// predecessor would otherwise be read as this relay's, pointing `status`
+	// at an address that died with the old process.
+	wantTunnel := !*noTunnel && !cfg.NoTunnel
+	recordRuntime := func(url string) {
+		status.RecordRuntime(cfg.Dir,
+			status.Runtime{Listen: cfg.Listen, URL: url, Tunnel: wantTunnel})
+	}
+	recordRuntime("")
+
 	// tn is read and reassigned from two goroutines once the supervisor is
 	// running: the supervisor's Restart closure replaces it after cloudflared
 	// dies, and the main goroutine's shutdown path stops whatever is current.
@@ -134,17 +145,17 @@ func main() {
 	var tn *tunnel.Tunnel
 	// The config setting matters for services, which run with no arguments and
 	// so can never pass --no-tunnel.
-	if !*noTunnel && !cfg.NoTunnel {
+	if wantTunnel {
 		tn, err = tunnel.Start(cfg.Listen, cfg.Token, os.Stdout)
 		if err != nil {
 			log.Printf("tunnel disabled: %v", err)
 			tn = nil
 		}
 	}
-	// `status` runs as a separate process and cannot see this URL any other
-	// way; cloudflared mints a new one on every start.
+	// `status` runs as a separate process and can learn this URL no other way:
+	// cloudflared mints a new one on every start.
 	if tn != nil {
-		status.RecordTunnelURL(cfg.Dir, tn.URL)
+		recordRuntime(tn.URL)
 	}
 
 	var cancelSup context.CancelFunc
@@ -166,7 +177,7 @@ func main() {
 				tn = fresh
 				tnMu.Unlock()
 
-				status.RecordTunnelURL(cfg.Dir, fresh.URL)
+				recordRuntime(fresh.URL)
 				log.Printf("tunnel public URL changed to %s — update the watch's relay URL setting", fresh.URL)
 				return fresh.URL, nil
 			},
@@ -213,9 +224,9 @@ func main() {
 	tnMu.Unlock()
 	if final != nil {
 		final.Stop()
-		// The recorded URL stops resolving the moment cloudflared exits.
-		status.ClearTunnelURL(cfg.Dir)
 	}
+	// The recorded address stops answering the moment this process exits.
+	status.ClearRuntime(cfg.Dir)
 	st.Close()
 	os.Exit(exitCode)
 }

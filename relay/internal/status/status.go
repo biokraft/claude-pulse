@@ -39,9 +39,13 @@ type Report struct {
 	Now time.Time
 
 	ConfigPath string
-	Listen     string
-	TokenLen   int
-	NoTunnel   bool
+	// Listen is where the relay actually is, which is the recorded address
+	// when one was recorded and the configured one otherwise. ListenOverride
+	// says the two disagreed, i.e. the relay was started with -listen.
+	Listen         string
+	ListenOverride bool
+	TokenLen       int
+	NoTunnel       bool
 
 	// LocalUp is whether anything answered on Listen. LocalErr explains a
 	// false, in the words of the transport rather than of a guess.
@@ -103,34 +107,50 @@ func Gather(ctx context.Context, o Options) Report {
 		now = time.Now()
 	}
 
+	// The receipt wins over the config: -listen is never written back, so a
+	// relay started with an override lives somewhere config.json cannot name.
+	rt, haveReceipt := ReadRuntime(o.Dir)
+	listen := o.Listen
+	if rt.Listen != "" {
+		listen = rt.Listen
+	}
+
+	// What the running relay was told beats what the config says, for the same
+	// reason as the listen address: --no-tunnel is a flag, not a setting.
+	noTunnel := o.NoTunnel
+	if haveReceipt {
+		noTunnel = !rt.Tunnel
+	}
+
 	r := Report{
-		Now:         now,
-		ConfigPath:  filepath.Join(o.Dir, "config.json"),
-		Listen:      o.Listen,
-		TokenLen:    len(o.Token),
-		NoTunnel:    o.NoTunnel,
-		ServicePath: o.ServicePath,
+		Now:            now,
+		ConfigPath:     filepath.Join(o.Dir, "config.json"),
+		Listen:         listen,
+		ListenOverride: rt.Listen != "" && rt.Listen != o.Listen,
+		TokenLen:       len(o.Token),
+		NoTunnel:       noTunnel,
+		ServicePath:    o.ServicePath,
 	}
 
 	// The local check is unauthenticated on purpose: a 401 proves the relay's
 	// own handler answered, which is all this line claims. Sending the token
 	// here would prove the same thing while giving a wrong URL somewhere to
 	// leak it to.
-	r.LocalUp, r.LocalErr = probe(ctx, client, "http://"+o.Listen)
+	r.LocalUp, r.LocalErr = probe(ctx, client, "http://"+listen)
 
 	switch {
 	case o.PublicURL != "":
 		r.TunnelURL = strings.TrimSuffix(o.PublicURL, "/")
 		r.TunnelGiven = true
-	case !o.NoTunnel:
-		r.TunnelURL = ReadTunnelURL(o.Dir)
+	case !noTunnel:
+		r.TunnelURL = rt.URL
 	}
 	if r.TunnelURL != "" {
 		r.TunnelUp, r.TunnelErr = probe(ctx, client, r.TunnelURL)
 	}
 
 	if r.LocalUp {
-		r.Snap, r.SnapErr = fetchSnapshot(ctx, client, "http://"+o.Listen, o.Token)
+		r.Snap, r.SnapErr = fetchSnapshot(ctx, client, "http://"+listen, o.Token)
 	}
 
 	r.NextPoll, r.PollInterval = readPollState(filepath.Join(o.Dir, "poll-state.json"))
@@ -246,7 +266,9 @@ func (r Report) Problems() []string {
 	if r.TunnelURL != "" && !r.TunnelUp {
 		out = append(out, "the tunnel URL does not answer: "+r.TunnelErr)
 	}
-	if r.Snap == nil && r.SnapErr != "" {
+	// A missing token already appears above; reporting the snapshot it makes
+	// unreadable would be the same root cause stated twice.
+	if r.Snap == nil && r.SnapErr != "" && r.TokenLen > 0 {
 		out = append(out, "cannot read the relay's snapshot: "+r.SnapErr)
 	}
 	if r.Snap != nil && r.Snap.Stale {

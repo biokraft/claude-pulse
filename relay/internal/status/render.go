@@ -38,6 +38,9 @@ func Render(w io.Writer, r Report) {
 	section("Relay")
 	if r.LocalUp {
 		good("listening", r.Listen)
+		if r.ListenOverride {
+			line("", "started with -listen, so this is not the address in the config")
+		}
 	} else {
 		bad("listening", "nothing answers on "+r.Listen)
 		if r.LocalErr != "" {
@@ -54,7 +57,7 @@ func Render(w io.Writer, r Report) {
 	section("Watch reachability")
 	switch {
 	case r.NoTunnel && r.TunnelURL == "":
-		line("tunnel", "disabled in config (no_tunnel) — something else must front the relay")
+		line("tunnel", "none of its own (--no-tunnel) — something else must front the relay")
 		line("", "check that route with: claude-pulse-relay status -url https://your-host")
 	case r.TunnelURL == "":
 		bad("tunnel", "not running")

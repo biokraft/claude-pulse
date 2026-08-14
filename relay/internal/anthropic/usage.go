@@ -13,11 +13,13 @@ const (
 	staleAfter   = 15 * time.Minute
 )
 
+// The json tags are for the persisted copy in poll-state.json; the HTTP
+// snapshot builds its own payload in internal/server.
 type Usage struct {
-	FiveHourPct      float64
-	SevenDayPct      float64
-	FiveHourResetsAt time.Time
-	SevenDayResetsAt time.Time
+	FiveHourPct      float64   `json:"five_hour_pct"`
+	SevenDayPct      float64   `json:"seven_day_pct"`
+	FiveHourResetsAt time.Time `json:"five_hour_resets_at"`
+	SevenDayResetsAt time.Time `json:"seven_day_resets_at"`
 }
 
 type UsagePoller struct {

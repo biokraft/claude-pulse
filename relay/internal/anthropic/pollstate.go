@@ -14,11 +14,21 @@ import (
 // watch just showed zeros.
 //
 // Persisting the schedule fixes that: a restarted relay honours the backoff its
-// predecessor earned. The file holds no usage data and no credentials — only
-// when the next poll is due — so it is not sensitive.
+// predecessor earned.
+//
+// The last reading is persisted alongside it, for the same reason seen from the
+// other side. A relay that restarts while backed off has nothing to serve and
+// no way to get anything for up to an hour, so the watch fell back to zeros and
+// dashes — losing data the relay had already fetched successfully. Restoring it
+// means the watch shows the last known figures with an honest "synced 40m ago"
+// instead.
+//
+// The file holds no credentials: quota percentages, reset times and a schedule.
 type pollState struct {
 	NextDue  time.Time     `json:"next_due"`
 	Interval time.Duration `json:"interval"`
+	Usage    *Usage        `json:"usage,omitempty"`
+	Fetched  time.Time     `json:"fetched,omitempty"`
 }
 
 // StateFile makes the poller persist its schedule to path. Errors are
@@ -45,6 +55,15 @@ func (p *UsagePoller) StateFile(path string) {
 	if s.NextDue.After(p.nextDue) {
 		p.nextDue = s.NextDue
 	}
+	// A restored reading is never treated as fresh: p.fetched keeps the time
+	// of the original fetch, so Current still calls it stale once it ages past
+	// staleAfter. The watch then shows real numbers with an accurate age
+	// rather than zeros.
+	if s.Usage != nil && !s.Fetched.IsZero() {
+		p.usage = *s.Usage
+		p.fetched = s.Fetched
+		p.hasData = true
+	}
 }
 
 // saveState persists the schedule. The caller must hold p.mu.
@@ -52,7 +71,12 @@ func (p *UsagePoller) saveState() {
 	if p.statePath == "" {
 		return
 	}
-	b, err := json.Marshal(pollState{NextDue: p.nextDue, Interval: p.interval})
+	st := pollState{NextDue: p.nextDue, Interval: p.interval}
+	if p.hasData {
+		st.Usage = &p.usage
+		st.Fetched = p.fetched
+	}
+	b, err := json.Marshal(st)
 	if err != nil {
 		return
 	}

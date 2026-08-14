@@ -231,3 +231,63 @@ func TestPollStateCannotShortenTheInterval(t *testing.T) {
 		t.Errorf("interval = %v, want at least the %v default", got, baseInterval)
 	}
 }
+
+// A relay that restarts while backed off cannot fetch anything for up to an
+// hour. Without the last reading it serves zeros for that whole window, and the
+// watch shows dashes for data the relay had already successfully fetched.
+func TestLastReadingSurvivesRestart(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if _, err := w.Write([]byte(`{"five_hour":{"utilization":68,"resets_at":"2026-07-27T12:00:00Z"},
+			"seven_day":{"utilization":42,"resets_at":"2026-07-30T00:00:00Z"}}`)); err != nil {
+			t.Errorf("write: %v", err)
+		}
+	}))
+	defer srv.Close()
+	statePath := filepath.Join(t.TempDir(), "poll-state.json")
+	t0 := time.Date(2026, 7, 27, 10, 0, 0, 0, time.UTC)
+
+	first := NewUsagePoller(srv.URL, fixedCreds)
+	first.StateFile(statePath)
+	first.Poll(t0)
+
+	// A fresh poller, as after a restart, pointed at the same state file.
+	second := NewUsagePoller(srv.URL, fixedCreds)
+	second.StateFile(statePath)
+
+	u, fetched, stale := second.Current(t0.Add(time.Minute))
+	if u.FiveHourPct != 68 || u.SevenDayPct != 42 {
+		t.Errorf("Usage = %+v, want the persisted reading", u)
+	}
+	if !fetched.Equal(t0) {
+		t.Errorf("fetched = %v, want the original fetch time %v", fetched, t0)
+	}
+	if stale {
+		t.Error("stale = true one minute after the persisted fetch")
+	}
+	if !u.FiveHourResetsAt.Equal(time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC)) {
+		t.Errorf("FiveHourResetsAt = %v, want the persisted reset time", u.FiveHourResetsAt)
+	}
+
+	// The restored reading is not treated as fresh forever: it ages out on the
+	// same clock as a live one, so the watch is never told stale data is new.
+	if _, _, stale := second.Current(t0.Add(staleAfter + time.Minute)); !stale {
+		t.Error("stale = false well past staleAfter")
+	}
+}
+
+// Nothing has been fetched yet, so there is nothing to restore — and the
+// absence must not be mistaken for a reading of zero.
+func TestNoPersistedReadingLeavesTheRelayEmpty(t *testing.T) {
+	statePath := filepath.Join(t.TempDir(), "poll-state.json")
+	if err := os.WriteFile(statePath,
+		[]byte(`{"next_due":"2026-07-27T11:00:00Z","interval":600000000000}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	p := NewUsagePoller("http://127.0.0.1:1", fixedCreds)
+	p.StateFile(statePath)
+
+	if _, _, stale := p.Current(time.Date(2026, 7, 27, 10, 0, 0, 0, time.UTC)); !stale {
+		t.Error("stale = false with no persisted reading")
+	}
+}

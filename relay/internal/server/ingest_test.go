@@ -24,11 +24,11 @@ func TestIngestAccumulatesDeltas(t *testing.T) {
 		return rr.Code
 	}
 	// cumulative posts from one session: 1.00 then 1.50 -> stored total 1.50, not 2.50
-	if c := post(`{"session_id":"s1","cost":{"total_cost_usd":1.00},"context_window":{"input_tokens":600,"output_tokens":400}}`); c != 204 {
+	if c := post(`{"session_id":"s1","cost":{"total_cost_usd":1.00},"context_window":{"total_input_tokens":600,"total_output_tokens":400}}`); c != 204 {
 		t.Fatalf("code %d", c)
 	}
-	post(`{"session_id":"s1","cost":{"total_cost_usd":1.50},"context_window":{"input_tokens":900,"output_tokens":600}}`)
-	post(`{"session_id":"s2","cost":{"total_cost_usd":0.30},"context_window":{"input_tokens":100,"output_tokens":50}}`)
+	post(`{"session_id":"s1","cost":{"total_cost_usd":1.50},"context_window":{"total_input_tokens":900,"total_output_tokens":600}}`)
+	post(`{"session_id":"s2","cost":{"total_cost_usd":0.30},"context_window":{"total_input_tokens":100,"total_output_tokens":50}}`)
 	got, _ := st.Daily("2026-07-27", 1)
 	if got[0].CostUSD != 1.80 {
 		t.Fatalf("cost = %v, want 1.80", got[0].CostUSD)
@@ -57,7 +57,7 @@ func TestIngestReturns500OnStoreFailure(t *testing.T) {
 	st.Close()
 
 	// Post against closed store should return 500
-	req := httptest.NewRequest("POST", "/ingest/statusline", strings.NewReader(`{"session_id":"s1","cost":{"total_cost_usd":1.00},"context_window":{"input_tokens":600,"output_tokens":400}}`))
+	req := httptest.NewRequest("POST", "/ingest/statusline", strings.NewReader(`{"session_id":"s1","cost":{"total_cost_usd":1.00},"context_window":{"total_input_tokens":600,"total_output_tokens":400}}`))
 	rr := httptest.NewRecorder()
 	h.ServeHTTP(rr, req)
 	if rr.Code != 500 {
@@ -117,7 +117,7 @@ func TestIngestDoesNotDoubleCountAfterARestart(t *testing.T) {
 		}
 	}
 	const payload = `{"session_id":"long-lived","cost":{"total_cost_usd":79.73},
-		"context_window":{"input_tokens":1000,"output_tokens":500}}`
+		"context_window":{"total_input_tokens":1000,"total_output_tokens":500}}`
 
 	st, err := store.Open(dbPath)
 	if err != nil {
@@ -145,5 +145,49 @@ func TestIngestDoesNotDoubleCountAfterARestart(t *testing.T) {
 	}
 	if got[0].Tokens != 1500 {
 		t.Errorf("tokens = %v, want 1500 counted exactly once", got[0].Tokens)
+	}
+}
+
+// Guards the exact field names Claude Code sends. The previous names decoded
+// cleanly to zero, so every test passed while the watch showed "0 tokens" —
+// this payload is copied from a real statusline invocation.
+func TestIngestReadsTheRealPayloadShape(t *testing.T) {
+	st, err := store.Open(filepath.Join(t.TempDir(), "t.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer st.Close()
+	h := IngestHandler(st, func() string { return "2026-08-15" }, time.Now)
+
+	const real = `{
+		"session_id": "abc",
+		"model": {"id": "claude-opus-5", "display_name": "Opus 5"},
+		"cost": {"total_cost_usd": 3.5724, "total_duration_ms": 934286},
+		"context_window": {
+			"total_input_tokens": 237758,
+			"total_output_tokens": 216,
+			"context_window_size": 1000000,
+			"current_usage": {"input_tokens": 2, "output_tokens": 216,
+				"cache_read_input_tokens": 237115},
+			"used_percentage": 24
+		}
+	}`
+	req := httptest.NewRequest("POST", "/ingest/statusline", strings.NewReader(real))
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+	if rr.Code != http.StatusNoContent {
+		t.Fatalf("code %d", rr.Code)
+	}
+
+	got, err := st.Daily("2026-08-15", 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The session totals, not the per-message figures nested in current_usage.
+	if got[0].Tokens != 237974 {
+		t.Errorf("tokens = %d, want 237974 (237758 + 216)", got[0].Tokens)
+	}
+	if got[0].CostUSD != 3.5724 {
+		t.Errorf("cost = %v, want 3.5724", got[0].CostUSD)
 	}
 }

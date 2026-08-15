@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <iq:manifest version="3" xmlns:iq="http://www.garmin.com/xml/connectiq">
-  <iq:application id="7b8412b82d8c462d83944a37b183c471" type="watch-app" version="1.0.1" name="@Strings.AppName"
+  <iq:application id="7b8412b82d8c462d83944a37b183c471" type="watch-app" version="1.0.2" name="@Strings.AppName"
       entry="ClaudePulseApp" launcherIcon="@Drawables.LauncherIcon"
       minApiLevel="5.0.0">
     <iq:products>

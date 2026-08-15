@@ -71,6 +71,20 @@ func Render(w io.Writer, r Report) {
 		line("", r.TunnelErr)
 	}
 
+	// The decisive question when the watch shows dashes: has it ever actually
+	// reached the relay? A reachable tunnel does not prove it has.
+	if r.Snap != nil {
+		switch {
+		case r.Snap.ServedLastAt != "":
+			good("watch fetch", ageOf(r.Snap.ServedLastAt, r.Now)+" ("+orDash(r.Snap.ServedAgent)+")")
+		case r.Snap.DeniedLastAt != "":
+			bad("watch fetch", "never — but something was rejected "+
+				ageOf(r.Snap.DeniedLastAt, r.Now)+", so the token is wrong")
+		default:
+			bad("watch fetch", "never since the relay started")
+		}
+	}
+
 	section("Usage data")
 	if r.Snap == nil {
 		bad("snapshot", orDash(r.SnapErr))

@@ -18,6 +18,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/biokraft/claude-pulse/relay/internal/server"
 )
 
 // Snapshot is the subset of the relay's /api/v1/snapshot payload worth
@@ -31,6 +33,9 @@ type Snapshot struct {
 	TodayTokens  int64   `json:"today_tokens"`
 	FetchedAt    string  `json:"fetched_at"`
 	CostLastAt   string  `json:"cost_last_at"`
+	ServedLastAt string  `json:"served_last_at"`
+	ServedAgent  string  `json:"served_last_agent"`
+	DeniedLastAt string  `json:"denied_last_at"`
 	Stale        bool    `json:"stale"`
 }
 
@@ -171,6 +176,7 @@ func probe(ctx context.Context, client *http.Client, base string) (bool, string)
 	if err != nil {
 		return false, err.Error()
 	}
+	req.Header.Set("User-Agent", server.StatusUserAgent)
 	resp, err := client.Do(req)
 	if err != nil {
 		return false, err.Error()
@@ -191,6 +197,7 @@ func fetchSnapshot(ctx context.Context, client *http.Client, base, token string)
 		return nil, err.Error()
 	}
 	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("User-Agent", server.StatusUserAgent)
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err.Error()

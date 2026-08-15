@@ -99,3 +99,34 @@ func TestBearerHeaderStrictParsing(t *testing.T) {
 		t.Fatalf("non-Bearer header: code %d, want 401", resp.StatusCode)
 	}
 }
+
+// The status command asks the relay the same question the watch does, so its
+// own requests must not be logged — otherwise the report claims the watch just
+// fetched every time it is run.
+func TestServeLogIgnoresTheStatusCommand(t *testing.T) {
+	Watch = &serveLog{}
+
+	Watch.record(time.Date(2026, 8, 15, 9, 0, 0, 0, time.UTC), StatusUserAgent, true)
+	if last, _, _ := Watch.Last(); !last.IsZero() {
+		t.Errorf("last = %v, want zero: the status command must not count", last)
+	}
+
+	watchAgent := "GarminConnectIQ/1.0"
+	when := time.Date(2026, 8, 15, 9, 5, 0, 0, time.UTC)
+	Watch.record(when, watchAgent, true)
+	last, agent, _ := Watch.Last()
+	if !last.Equal(when) || agent != watchAgent {
+		t.Errorf("last = (%v, %q), want (%v, %q)", last, agent, when, watchAgent)
+	}
+
+	// A rejected request is recorded separately: it is the signature of a
+	// watch that reaches the relay with the wrong token.
+	denyAt := time.Date(2026, 8, 15, 9, 6, 0, 0, time.UTC)
+	Watch.record(denyAt, watchAgent, false)
+	if _, _, denied := Watch.Last(); !denied.Equal(denyAt) {
+		t.Errorf("denied = %v, want %v", denied, denyAt)
+	}
+	if last, _, _ := Watch.Last(); !last.Equal(when) {
+		t.Error("a rejected request overwrote the last successful fetch")
+	}
+}

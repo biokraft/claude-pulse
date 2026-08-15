@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/biokraft/claude-pulse/relay/internal/anthropic"
@@ -33,11 +34,52 @@ func authorized(r *http.Request, token string) bool {
 	return subtle.ConstantTimeCompare([]byte(got), []byte(token)) == 1
 }
 
+// serveLog records who fetched the snapshot and when. Without it there is no
+// way to tell a watch that cannot reach the relay from a watch that reaches it
+// and displays nothing — the two look identical from here, and the only person
+// who can see the watch is the one asking for help.
+type serveLog struct {
+	mu     sync.Mutex
+	last   time.Time
+	agent  string
+	denied time.Time
+}
+
+// StatusUserAgent identifies the status command's own requests, which are
+// excluded from the log. Counting them would make the report claim the watch
+// had just fetched every single time it was run.
+const StatusUserAgent = "claude-pulse-status"
+
+func (l *serveLog) record(t time.Time, agent string, ok bool) {
+	if agent == StatusUserAgent {
+		return
+	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if ok {
+		l.last, l.agent = t, agent
+		return
+	}
+	l.denied = t
+}
+
+// Last reports when the snapshot was last served, and to what.
+func (l *serveLog) Last() (time.Time, string, time.Time) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.last, l.agent, l.denied
+}
+
+// Watch is the shared record of snapshot fetches, exported so the status
+// command can report it.
+var Watch = &serveLog{}
+
 func New(token string, st *store.Store, p Providers) http.Handler {
 	mux := http.NewServeMux()
 	guard := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if !authorized(r, token) {
+				Watch.record(time.Now(), r.UserAgent(), false)
 				// A browser landing here scanned a stale QR code. Answer in
 				// HTML: http.Error sends text/plain with nosniff, which mobile
 				// Safari turns into a file download instead of a page.
@@ -68,6 +110,7 @@ func New(token string, st *store.Store, p Providers) http.Handler {
 		return time.Now().UTC().Format("2006-01-02")
 	}, time.Now)))
 	mux.Handle("GET /api/v1/snapshot", guard(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		Watch.record(time.Now(), r.UserAgent(), true)
 		u, fetched, stale := p.Usage(time.Now())
 		active, n := p.Activity()
 		daily, err := p.Daily()
@@ -80,6 +123,14 @@ func New(token string, st *store.Store, p Providers) http.Handler {
 			if t, ok := p.LastCost(); ok {
 				costAt = t.UTC().Format(time.RFC3339)
 			}
+		}
+		servedTime, agent, denied := Watch.Last()
+		servedAt, servedAgent, deniedAt := "", agent, ""
+		if !servedTime.IsZero() {
+			servedAt = servedTime.UTC().Format(time.RFC3339)
+		}
+		if !denied.IsZero() {
+			deniedAt = denied.UTC().Format(time.RFC3339)
 		}
 		today := store.DayTotal{}
 		if len(daily) > 0 {
@@ -98,6 +149,9 @@ func New(token string, st *store.Store, p Providers) http.Handler {
 			"daily":               daily,
 			"fetched_at":          fetched.UTC().Format(time.RFC3339),
 			"cost_last_at":        costAt,
+			"served_last_at":      servedAt,
+			"served_last_agent":   servedAgent,
+			"denied_last_at":      deniedAt,
 			"stale":               stale,
 		}); err != nil {
 			// Headers already sent; only option is to log.

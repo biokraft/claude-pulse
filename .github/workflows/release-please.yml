@@ -6,6 +6,9 @@ name: release-please
 on:
   push:
     branches: [main]
+  # Lets the release PR be refreshed without an unrelated commit, and makes it
+  # possible to confirm the token works without pushing something releasable.
+  workflow_dispatch:
 
 permissions:
   contents: write

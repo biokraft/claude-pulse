@@ -1,0 +1,51 @@
+# Builds and publishes the relay whenever a version tag is pushed.
+#
+# The tag shape here and the one release-please is configured to create must
+# match. If they ever drift, releases keep being created and silently arrive
+# with no binaries attached.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+  # Lets the run attest that these binaries came from this workflow and this
+  # commit, so a download can be verified with `gh attestation verify`.
+  id-token: write
+  attestations: write
+
+jobs:
+  relay:
+    name: relay binaries
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # goreleaser derives the version and the previous tag from history;
+          # a shallow clone gives it neither.
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: relay/go.mod
+          cache-dependency-path: relay/go.sum
+
+      - uses: goreleaser/goreleaser-action@v6
+        id: goreleaser
+        with:
+          version: "~> v2"
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Empty on forks and until the tap secret exists. The cask is then
+          # built but not pushed — GITHUB_TOKEN cannot write to another
+          # repository, so falling back to it would fail the whole release.
+          TAP_TOKEN: ${{ secrets.TAP_TOKEN }}
+
+      - name: Attest the released binaries
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            dist/*.tar.gz

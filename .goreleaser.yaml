@@ -1,0 +1,102 @@
+# Builds the relay for every platform it supports, so installing it stops
+# requiring a Go toolchain and a source checkout.
+#
+# The watch app is not built here. Connect IQ packages are produced by Garmin's
+# closed SDK, which needs a signing key that must never be in CI, and the store
+# upload is a manual step in Garmin's dashboard either way. RELEASING.md carries
+# that half of the release as a checklist, since nothing here can enforce it.
+version: 2
+
+project_name: claude-pulse-relay
+
+before:
+  hooks:
+    - go -C relay mod tidy
+    - go -C relay test ./...
+
+builds:
+  - id: relay
+    # The Go module lives in relay/, not the repository root.
+    dir: relay
+    main: ./cmd/claude-pulse-relay
+    binary: claude-pulse-relay
+    env:
+      # Pure Go: the SQLite driver is modernc's translation, not a cgo binding,
+      # which is what makes cross-compiling every target from one runner work.
+      - CGO_ENABLED=0
+    goos: [darwin, linux]
+    goarch: [amd64, arm64]
+    flags:
+      - -trimpath
+    ldflags:
+      # The same variable install.sh sets, so a downloaded binary and a
+      # locally built one report their version identically.
+      - -s -w -X main.version={{ .Version }}
+
+archives:
+  - id: relay
+    formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - README.md
+
+checksum:
+  # One manifest rather than a file per artifact: install.sh fetches it once
+  # and verifies whichever archive it downloaded against it.
+  name_template: "checksums.txt"
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  # The changelog is release-please's job; duplicating it here would produce
+  # two differently-worded lists of the same commits in one release.
+  disable: true
+
+homebrew_casks:
+  - name: claude-pulse-relay
+    repository:
+      owner: biokraft
+      name: homebrew-tap
+      token: "{{ .Env.TAP_TOKEN }}"
+    directory: Casks
+    # The tap lives in another repository, which GITHUB_TOKEN cannot write to.
+    # Without a PAT the cask is built but not pushed, so a release still
+    # succeeds on a fork or before the tap secret exists.
+    skip_upload: '{{ if eq .Env.TAP_TOKEN "" }}true{{ else }}false{{ end }}'
+    homepage: "https://github.com/biokraft/claude-pulse"
+    description: "Feeds the Claude Pulse Garmin watch app with your Claude Code usage"
+    commit_author:
+      name: claude-pulse-release
+      email: actions@github.com
+    hooks:
+      post:
+        # The binaries are not notarised, so Gatekeeper quarantines anything
+        # downloaded and the first run dies with a dialog rather than an error
+        # a user can act on.
+        install: |
+          if system_command("/usr/bin/xattr", args: ["-h"]).exit_status == 0
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/claude-pulse-relay"]
+          end
+    caveats: |
+      Start the relay and pair your watch:
+        claude-pulse-relay
+
+      To run it in the background across reboots:
+        claude-pulse-relay service install
+
+release:
+  prerelease: auto
+  footer: |
+    ## Installing
+
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/biokraft/claude-pulse/main/install.sh | bash
+    ```
+
+    Or `brew install biokraft/tap/claude-pulse-relay`, or download a binary
+    below and verify it against `checksums.txt`.
+
+    The watch app is installed separately from the
+    [Connect IQ Store](https://apps.garmin.com/).

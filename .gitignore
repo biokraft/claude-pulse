@@ -1,6 +1,8 @@
 .DS_Store
 bin/
 dist/
+# Connect IQ exports. Kept out of dist/, which goreleaser wipes on every run.
+build/
 *.prg
 *.prg.debug.xml
 gen/

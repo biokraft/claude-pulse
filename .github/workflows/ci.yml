@@ -102,3 +102,30 @@ jobs:
               cat /tmp/result.txt
               tail -1 /tmp/result.txt | grep -q "^PASSED"
             '
+
+  # Proves the release can actually be built before a tag exists. A broken
+  # .goreleaser.yaml otherwise only surfaces after the tag is pushed, when the
+  # release has already been created and the fix means cutting another version.
+  release-dryrun:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: relay/go.mod
+          cache-dependency-path: relay/go.sum
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          version: "~> v2"
+          args: release --snapshot --clean --skip=publish
+        env:
+          # Empty here on purpose: it exercises the path a fork takes, where
+          # the cask is rendered but never pushed.
+          TAP_TOKEN: ""
+      - name: Check the archives contain a runnable binary
+        run: |
+          set -euo pipefail
+          tar -xzf dist/claude-pulse-relay_*_linux_amd64.tar.gz -C /tmp
+          /tmp/claude-pulse-relay version

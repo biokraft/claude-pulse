@@ -1,0 +1,29 @@
+# Keeps a release pull request open with the next version and the changelog
+# entries for everything merged since the last release. Merging that PR tags
+# the release, which is what triggers release.yml to build the binaries.
+name: release-please
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    env:
+      # A tag pushed using the automatic GITHUB_TOKEN does not start another
+      # workflow run. Without a PAT here, every release would be created with
+      # no binaries attached and nothing would say why — so the job is skipped
+      # entirely rather than half-working.
+      RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        if: env.RELEASE_TOKEN != ''
+        with:
+          token: ${{ secrets.RELEASE_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json

@@ -160,41 +160,20 @@ saying "remember to delete it before a store export" — precisely the kind of t
 eventually ships fake data to real users. Nothing to remember now: the tree is clean
 whether or not the script succeeds. Verify with `git status watch/` after running it.
 
-## Releases — required for every feature
+## Releases
 
-**Every user-visible feature, and every notable fix, ends with a version bump and a
-public GitHub release.** This is not optional housekeeping: `install.sh` stamps the
-binary from `git describe`, the upgrade path reports `old -> new`, and the version
-receipt at `~/.claude-pulse/installed-version` is compared against it. Skip the tag and
-users see meaningless version strings like `v1.0.0-beta.1-7-gabc1234`, and cannot tell
-whether an upgrade did anything.
+The full runbook is in [RELEASING.md](RELEASING.md); read it before cutting one. The
+short version:
 
-Versioning is [semver](https://semver.org) with a `v` prefix. While the app is in beta,
-releases are `v1.0.0-beta.N` and marked as pre-releases.
-
-```bash
-# 1. Tag (annotated, so `git describe` picks it up)
-git tag -a v1.0.0-beta.2 -m "v1.0.0-beta.2"
-git push origin v1.0.0-beta.2
-
-# 2. Export the watch package if the watch app changed at all
-export JAVA_HOME=/opt/homebrew/opt/openjdk
-SDK="$(ls -d "$HOME/Library/Application Support/Garmin/ConnectIQ/Sdks"/*/bin | tail -1)"
-"$SDK/monkeyc" -e -f watch/monkey.jungle -o ~/Desktop/ClaudePulse-v1.0.0-beta.2.iq \
-  -y developer_key.der -r
-
-# 3. Publish, attaching the .iq when there is one
-gh release create v1.0.0-beta.2 --prerelease \
-  --title "v1.0.0-beta.2 — <what changed>" \
-  --notes "..." \
-  ~/Desktop/ClaudePulse-v1.0.0-beta.2.iq
-```
-
-Release notes lead with what the user does differently, not the commit list. If the
-change affects the relay, say whether re-running the installer is enough (it usually is
-— it upgrades in place and preserves config). If it affects the watch app, the `.iq`
-also has to be re-uploaded to the Connect IQ Store, which is a manual step in Garmin's
-dashboard and easy to forget.
+- **The relay releases itself.** Land Conventional Commits on `main`, merge the release
+  pull request release-please keeps open, and the tag it creates builds and publishes
+  the binaries. Never bump a version or edit `CHANGELOG.md` by hand.
+- **The watch app does not.** Any change under `watch/` needs `watch/manifest.xml`
+  bumped, a `.iq` exported to `build/` (never `dist/` — goreleaser wipes it on every
+  run), and a manual upload to Garmin's dashboard. Nothing in CI can do or check this,
+  so it is a checklist in RELEASING.md instead.
+- **The two carry different version numbers on purpose.** Separate artifacts, separate
+  cadences, and the store constrains the watch app's numbering to only ever increase.
 
 ## Store
 

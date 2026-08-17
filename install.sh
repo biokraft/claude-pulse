@@ -4,18 +4,32 @@
 #
 #   curl -fsSL https://raw.githubusercontent.com/biokraft/claude-pulse/main/install.sh | bash
 #
-# Builds claude-pulse-relay from source and installs it into a bin directory on
-# your PATH. Works both piped from curl (clones into a temp dir) and run from a
-# checkout (builds the checkout you already have).
+# Installs claude-pulse-relay into a bin directory on your PATH.
+#
+# It downloads a released binary for this platform and verifies it against the
+# release's checksums.txt. Building from source is the fallback, used when the
+# platform has no published binary, when a specific ref is requested, or when
+# the script is run from a checkout — in which case it builds that checkout,
+# which is what the user is looking at.
 #
 # Environment overrides:
-#   PREFIX   install directory        (default: ~/.local/bin, or /usr/local/bin if already on PATH)
-#   REF      git ref to build         (default: main)
-#   REPO     git URL to clone         (default: https://github.com/biokraft/claude-pulse.git)
+#   PREFIX     install directory      (default: ~/.local/bin, or /usr/local/bin if already on PATH)
+#   VERSION    release tag to install (default: the latest release)
+#   FROM_SOURCE=1  skip the download and build from source
+#   REF        git ref to build       (default: main; implies FROM_SOURCE)
+#   REPO       git URL to clone       (default: https://github.com/biokraft/claude-pulse.git)
 
 set -euo pipefail
 
 REPO="${REPO:-https://github.com/biokraft/claude-pulse.git}"
+SLUG="${SLUG:-biokraft/claude-pulse}"
+# Overridable so the download path can be exercised against a local server;
+# also lets someone install from a mirror.
+API_BASE="${API_BASE:-https://api.github.com/repos/$SLUG}"
+DOWNLOAD_BASE="${DOWNLOAD_BASE:-https://github.com/$SLUG/releases/download}"
+# Whether REF was asked for matters, not just its value: the default is only a
+# fallback for building, while an explicit one means "install exactly this".
+REF_EXPLICIT="${REF:-}"
 REF="${REF:-main}"
 GO_MIN_MAJOR=1
 GO_MIN_MINOR=25
@@ -63,21 +77,25 @@ esac
 
 command -v git >/dev/null 2>&1 || die "git is required but not installed."
 
-if ! command -v go >/dev/null 2>&1; then
-  die "Go ${GO_MIN_MAJOR}.${GO_MIN_MINOR}+ is required but not installed.
+# Go is checked only on the source path, further down: requiring it here would
+# turn a toolchain that a downloaded binary never needs into an install blocker.
+require_go() {
+  if ! command -v go >/dev/null 2>&1; then
+    die "Go ${GO_MIN_MAJOR}.${GO_MIN_MINOR}+ is required to build from source.
        macOS: brew install go
-       Linux: https://go.dev/doc/install"
-fi
-
-go_version="$(go env GOVERSION 2>/dev/null || echo unknown)"
-gv="${go_version#go}"
-gv_major="${gv%%.*}"
-gv_rest="${gv#*.}"
-gv_minor="${gv_rest%%.*}"
-if [ "${gv_major:-0}" -lt "$GO_MIN_MAJOR" ] ||
-   { [ "${gv_major:-0}" -eq "$GO_MIN_MAJOR" ] && [ "${gv_minor:-0}" -lt "$GO_MIN_MINOR" ]; }; then
-  die "Go ${GO_MIN_MAJOR}.${GO_MIN_MINOR}+ is required, found ${go_version}."
-fi
+       Linux: https://go.dev/doc/install
+       Or install a released binary instead: unset FROM_SOURCE and REF."
+  fi
+  go_version="$(go env GOVERSION 2>/dev/null || echo unknown)"
+  gv="${go_version#go}"
+  gv_major="${gv%%.*}"
+  gv_rest="${gv#*.}"
+  gv_minor="${gv_rest%%.*}"
+  if [ "${gv_major:-0}" -lt "$GO_MIN_MAJOR" ] ||
+     { [ "${gv_major:-0}" -eq "$GO_MIN_MAJOR" ] && [ "${gv_minor:-0}" -lt "$GO_MIN_MINOR" ]; }; then
+    die "Go ${GO_MIN_MAJOR}.${GO_MIN_MINOR}+ is required to build from source, found ${go_version}."
+  fi
+}
 
 # Pick an install directory. An existing install wins over the defaults, so an
 # upgrade replaces the binary in place rather than leaving a second copy for
@@ -125,7 +143,18 @@ else
   service_unit="$HOME/.config/systemd/user/claude-pulse-relay.service"
 fi
 has_service=0
-[ -f "$service_unit" ] && has_service=1
+if [ -f "$service_unit" ]; then
+  # Only claim the service if it actually runs the binary being replaced.
+  # Installing to a different PREFIX otherwise silently repoints the running
+  # service at the new location — observed while testing this script with
+  # PREFIX=/tmp, which left the real service executing out of /tmp.
+  if grep -q "$target" "$service_unit" 2>/dev/null; then
+    has_service=1
+  else
+    warn "a relay service exists but runs a different binary; leaving it alone"
+    info "$(grep -o '/[^"<[:space:]]*claude-pulse-relay' "$service_unit" 2>/dev/null | head -1)"
+  fi
+fi
 
 stop_service() {
   if [ "$(uname -s)" = "Darwin" ]; then
@@ -137,8 +166,6 @@ stop_service() {
 
 # ------------------------------------------------------------ sources ----
 
-# When run from a checkout, build that checkout: it is what the user is looking
-# at, and it avoids a pointless network round trip.
 script_dir=""
 if [ -n "${BASH_SOURCE[0]:-}" ] && [ -f "${BASH_SOURCE[0]}" ]; then
   script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -149,19 +176,34 @@ cleanup_dir=""
 cleanup() { if [ -n "$cleanup_dir" ]; then rm -rf "$cleanup_dir"; fi; }
 trap cleanup EXIT
 
+# Building is the fallback, not the default, but three situations still call
+# for it: an explicit request, a specific ref, or running from a checkout —
+# where the source in front of the user is the thing they meant to install.
+build_from_source=0
+[ "${FROM_SOURCE:-0}" = "1" ] && build_from_source=1
+[ -n "${REF_EXPLICIT:-}" ] && build_from_source=1
 if [ -n "$script_dir" ] && [ -f "$script_dir/relay/go.mod" ]; then
-  src="$script_dir"
-  step "Building from this checkout"
-  info "$src"
-else
-  src="$(mktemp -d)"
-  cleanup_dir="$src"
-  step "Fetching claude-pulse ($REF)"
-  git clone --depth 1 --branch "$REF" --quiet "$REPO" "$src" \
-    || die "failed to clone $REPO at $REF"
+  build_from_source=1
 fi
 
-# -------------------------------------------------------------- build ----
+# The platform triple used by the release archives. An unrecognised pair is not
+# an error: it just means there is no binary to download and source is the only
+# route.
+asset_os=""
+asset_arch=""
+case "$(uname -s)" in
+  Darwin) asset_os="darwin" ;;
+  Linux)  asset_os="linux" ;;
+esac
+case "$(uname -m)" in
+  x86_64|amd64) asset_arch="amd64" ;;
+  arm64|aarch64) asset_arch="arm64" ;;
+esac
+
+if [ "$build_from_source" = "0" ] && { [ -z "$asset_os" ] || [ -z "$asset_arch" ]; }; then
+  warn "no released binary for $(uname -s)/$(uname -m) — building from source instead"
+  build_from_source=1
+fi
 
 if [ -n "$existing" ]; then
   step "Upgrading claude-pulse-relay"
@@ -169,22 +211,113 @@ if [ -n "$existing" ]; then
   if [ "$has_service" = "1" ]; then
     info "service installed — it will be restarted on the new version"
   fi
-else
-  step "Building claude-pulse-relay"
 fi
 
 mkdir -p "$bindir"
-build_version="$(cd "$src" && git describe --tags --always 2>/dev/null || echo "$REF")"
 
-# Build beside the target, never over it: same filesystem keeps the final move
-# atomic, and a failed build cannot truncate a binary that currently works.
+# Stage beside the target, never over it: the same filesystem keeps the final
+# move atomic, and a failed install cannot truncate a binary that works.
 staged="$target.new"
 backup="$target.bak"
 rm -f "$staged"
-( cd "$src/relay" && go build -trimpath \
-    -ldflags "-X main.version=$build_version" \
-    -o "$staged" ./cmd/claude-pulse-relay ) \
-  || die "build failed"
+
+# ----------------------------------------------------------- download ----
+
+sha256_of() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | awk '{print $1}'
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$1" | awk '{print $1}'
+  else
+    # Never silently skip verification: an unverified binary is exactly what
+    # the checksum exists to prevent.
+    return 1
+  fi
+}
+
+download_release() {
+  command -v curl >/dev/null 2>&1 || { warn "curl is not installed"; return 1; }
+  command -v tar  >/dev/null 2>&1 || { warn "tar is not installed"; return 1; }
+
+  local tag="${VERSION:-}"
+  if [ -z "$tag" ]; then
+    tag="$(curl -fsSL "$API_BASE/releases/latest" 2>/dev/null \
+      | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | head -1)"
+  fi
+  [ -n "$tag" ] || { warn "could not determine the latest release"; return 1; }
+
+  local version="${tag#v}"
+  local archive="claude-pulse-relay_${version}_${asset_os}_${asset_arch}.tar.gz"
+  local base="$DOWNLOAD_BASE/$tag"
+
+  local tmp
+  tmp="$(mktemp -d)"
+  cleanup_dir="$tmp"
+
+  step "Downloading claude-pulse-relay $tag"
+  info "$archive"
+  curl -fsSL -o "$tmp/$archive" "$base/$archive" 2>/dev/null \
+    || { warn "no binary published for ${asset_os}/${asset_arch} in $tag"; return 1; }
+  curl -fsSL -o "$tmp/checksums.txt" "$base/checksums.txt" 2>/dev/null \
+    || { warn "$tag has no checksums.txt"; return 1; }
+
+  local want got
+  want="$(awk -v f="$archive" '$2 == f || $2 == "*" f {print $1}' "$tmp/checksums.txt" | head -1)"
+  [ -n "$want" ] || { warn "$archive is not listed in checksums.txt"; return 1; }
+  got="$(sha256_of "$tmp/$archive")" \
+    || die "neither sha256sum nor shasum is available, so the download cannot be verified.
+       Install one, or re-run with FROM_SOURCE=1 to build instead."
+  if [ "$want" != "$got" ]; then
+    die "checksum mismatch for $archive.
+       expected $want
+       actual   $got
+       Refusing to install. Report this at https://github.com/$SLUG/issues"
+  fi
+  ok "checksum verified"
+
+  tar -xzf "$tmp/$archive" -C "$tmp" || { warn "could not extract $archive"; return 1; }
+  [ -f "$tmp/claude-pulse-relay" ] && [ ! -L "$tmp/claude-pulse-relay" ] \
+    || { warn "the archive did not contain the expected binary"; return 1; }
+
+  mv "$tmp/claude-pulse-relay" "$staged" || return 1
+  chmod 755 "$staged"
+  return 0
+}
+
+# ------------------------------------------------------------- build ----
+
+build_from_git() {
+  require_go
+  command -v git >/dev/null 2>&1 || die "git is required to build from source."
+
+  local src
+  if [ -n "$script_dir" ] && [ -f "$script_dir/relay/go.mod" ]; then
+    src="$script_dir"
+    step "Building from this checkout"
+    info "$src"
+  else
+    src="$(mktemp -d)"
+    cleanup_dir="$src"
+    step "Fetching claude-pulse ($REF)"
+    git clone --depth 1 --branch "$REF" --quiet "$REPO" "$src" \
+      || die "failed to clone $REPO at $REF"
+  fi
+
+  local build_version
+  build_version="$(cd "$src" && git describe --tags --always 2>/dev/null || echo "$REF")"
+  ( cd "$src/relay" && go build -trimpath \
+      -ldflags "-X main.version=$build_version" \
+      -o "$staged" ./cmd/claude-pulse-relay ) \
+    || die "build failed"
+}
+
+if [ "$build_from_source" = "1" ]; then
+  build_from_git
+elif ! download_release; then
+  warn "falling back to building from source"
+  rm -f "$staged"
+  build_from_git
+fi
 
 # Prove it executes before it is allowed to replace anything.
 new_version="$("$staged" version 2>/dev/null | awk '{print $2}')"

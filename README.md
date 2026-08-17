@@ -9,6 +9,7 @@
 [![CI](https://github.com/biokraft/claude-pulse/actions/workflows/ci.yml/badge.svg)](https://github.com/biokraft/claude-pulse/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Go 1.25+](https://img.shields.io/badge/Go-1.25%2B-00ADD8?logo=go&logoColor=white)](relay/go.mod)
+[![Release](https://img.shields.io/github/v/release/biokraft/claude-pulse?sort=semver)](https://github.com/biokraft/claude-pulse/releases/latest)
 [![Connect IQ](https://img.shields.io/badge/Connect%20IQ-70%20devices-007CC3)](watch/manifest.xml)
 
 </div>
@@ -57,11 +58,22 @@ can point it at your own reverse proxy or Tailscale network with `--no-tunnel`.
 curl -fsSL https://raw.githubusercontent.com/biokraft/claude-pulse/main/install.sh | bash
 ```
 
-This builds `claude-pulse-relay` from source (needs Go 1.25+) and installs it to
-`~/.local/bin`, then tells you what to do next. Override the location with
-`PREFIX=/usr/local/bin`. Prefer to do it by hand? `cd relay && go build -o
-claude-pulse-relay ./cmd/claude-pulse-relay` — note the `cd`, the Go module lives in
-`relay/`, not the repo root.
+This downloads the release binary for your platform, verifies it against the release's
+`checksums.txt`, and installs it to `~/.local/bin`. No Go toolchain needed. Override the
+location with `PREFIX=/usr/local/bin`.
+
+| Method | Command | Requires |
+| --- | --- | --- |
+| Install script | `curl -fsSL .../install.sh \| bash` | curl, tar |
+| Homebrew | `brew install biokraft/tap/claude-pulse-relay` | Homebrew |
+| Release binary | [download](https://github.com/biokraft/claude-pulse/releases/latest), verify against `checksums.txt` | — |
+| From source | `FROM_SOURCE=1 curl -fsSL .../install.sh \| bash` | Go 1.25+, git |
+
+Binaries carry [build provenance](https://github.com/biokraft/claude-pulse/attestations):
+
+```bash
+gh attestation verify --owner biokraft claude-pulse-relay_*_darwin_arm64.tar.gz
+```
 
 **To upgrade later, run that same command again.** It detects the existing install,
 replaces the binary, restarts your service on the new version if you have one, and
@@ -143,7 +155,9 @@ each page from the simulator and `scripts/build-store-assets.py` turns those cap
 the store upload folder; [`CLAUDE.md`](CLAUDE.md) explains both.
 
 Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). For anything
-security-related, [SECURITY.md](SECURITY.md) has the disclosure process.
+security-related, [SECURITY.md](SECURITY.md) has the disclosure process. Maintainers:
+[RELEASING.md](RELEASING.md) covers how a release is cut, and
+[CHANGELOG.md](CHANGELOG.md) records what shipped.
 
 ## Troubleshooting
 

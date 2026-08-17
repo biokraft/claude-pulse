@@ -10,12 +10,16 @@ import (
 	"time"
 
 	"github.com/biokraft/claude-pulse/relay/internal/anthropic"
+	"github.com/biokraft/claude-pulse/relay/internal/quota"
 	"github.com/biokraft/claude-pulse/relay/internal/store"
 )
 
 type Providers struct {
 	Usage    func(now time.Time) (anthropic.Usage, time.Time, bool)
 	LastCost func() (time.Time, bool)
+	// Quota receives the quota figures carried by statusline payloads. It may
+	// be nil, in which case they are ignored.
+	Quota    *quota.Store
 	Activity func() (bool, int)
 	Daily    func() ([]store.DayTotal, error)
 }
@@ -106,7 +110,7 @@ func New(token string, st *store.Store, p Providers) http.Handler {
 	mux.HandleFunc("GET /favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	})
-	mux.Handle("POST /ingest/statusline", guard(IngestHandler(st, func() string {
+	mux.Handle("POST /ingest/statusline", guard(IngestHandler(st, p.Quota, func() string {
 		return time.Now().UTC().Format("2006-01-02")
 	}, time.Now)))
 	mux.Handle("GET /api/v1/snapshot", guard(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -122,6 +126,14 @@ func New(token string, st *store.Store, p Providers) http.Handler {
 		if p.LastCost != nil {
 			if t, ok := p.LastCost(); ok {
 				costAt = t.UTC().Format(time.RFC3339)
+			}
+		}
+		quotaSource := ""
+		if p.Quota != nil {
+			if r, ok := p.Quota.Current(); ok && !r.At.Before(fetched) {
+				quotaSource = r.Source
+			} else if ok || fetched.Year() > 2000 {
+				quotaSource = quota.SourcePoll
 			}
 		}
 		servedTime, agent, denied := Watch.Last()
@@ -149,6 +161,7 @@ func New(token string, st *store.Store, p Providers) http.Handler {
 			"daily":               daily,
 			"fetched_at":          fetched.UTC().Format(time.RFC3339),
 			"cost_last_at":        costAt,
+			"quota_source":        quotaSource,
 			"served_last_at":      servedAt,
 			"served_last_agent":   servedAgent,
 			"denied_last_at":      deniedAt,

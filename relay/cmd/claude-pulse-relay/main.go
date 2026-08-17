@@ -20,6 +20,7 @@ import (
 	"github.com/biokraft/claude-pulse/relay/internal/anthropic"
 	"github.com/biokraft/claude-pulse/relay/internal/config"
 	"github.com/biokraft/claude-pulse/relay/internal/hook"
+	"github.com/biokraft/claude-pulse/relay/internal/quota"
 	"github.com/biokraft/claude-pulse/relay/internal/server"
 	"github.com/biokraft/claude-pulse/relay/internal/service"
 	"github.com/biokraft/claude-pulse/relay/internal/status"
@@ -29,6 +30,11 @@ import (
 
 // version is overridden at build time with -ldflags "-X main.version=…".
 var version = "dev"
+
+// statuslineTrusted is how long a statusline reading suppresses the poll. It is
+// slightly longer than the poll's own five-minute interval, so an active
+// session stops the polling entirely rather than alternating between sources.
+const statuslineTrusted = 6 * time.Minute
 
 const usageText = `claude-pulse-relay — feeds the Claude Pulse Garmin watch app with your
 Claude Code usage. Your credentials never leave this machine.
@@ -110,16 +116,45 @@ func main() {
 	// Persist the poll schedule so restarts honour any backoff already earned;
 	// without this an upgrade loop re-triggers Anthropic's rate limiting.
 	poller.StateFile(filepath.Join(cfg.Dir, "poll-state.json"))
+
+	q := quota.New()
+	q.StateFile(filepath.Join(cfg.Dir, "quota.json"))
+
 	go func() {
 		for {
-			poller.Poll(time.Now())
+			// Skip the API call when the statusline has already reported more
+			// recently than the poll interval would have. Polling is the only
+			// thing that can be rate limited, and being rate limited is what
+			// left the watch showing zeros; while Claude Code is running there
+			// is nothing for a poll to add.
+			if !q.FreshSince(time.Now().Add(-statuslineTrusted)) {
+				poller.Poll(time.Now())
+			}
 			time.Sleep(30 * time.Second) // Poll() self-gates to >=5 min
 		}
 	}()
 
+	// currentUsage serves whichever source spoke last. The statusline usually
+	// wins while Claude Code is running; the poll takes over when it stops,
+	// which is the case the statusline cannot cover on its own.
+	currentUsage := func(now time.Time) (anthropic.Usage, time.Time, bool) {
+		polled, polledAt, polledStale := poller.Current(now)
+		r, ok := q.Pick(polledAt)
+		if !ok {
+			return polled, polledAt, polledStale
+		}
+		return anthropic.Usage{
+			FiveHourPct:      r.FiveHourPct,
+			SevenDayPct:      r.SevenDayPct,
+			FiveHourResetsAt: r.FiveHourResetsAt,
+			SevenDayResetsAt: r.SevenDayResetsAt,
+		}, r.At, quota.IsStale(r.At, now)
+	}
+
 	h := server.New(cfg.Token, st, server.Providers{
-		Usage:    poller.Current,
+		Usage:    currentUsage,
 		LastCost: st.LastCostAt,
+		Quota:    q,
 		Activity: func() (bool, int) { return activity.Check(*jobsDir) },
 		Daily: func() ([]store.DayTotal, error) {
 			return st.Daily(time.Now().UTC().Format("2006-01-02"), 7)

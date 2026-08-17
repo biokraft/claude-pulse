@@ -33,6 +33,7 @@ type Snapshot struct {
 	TodayTokens  int64   `json:"today_tokens"`
 	FetchedAt    string  `json:"fetched_at"`
 	CostLastAt   string  `json:"cost_last_at"`
+	QuotaSource  string  `json:"quota_source"`
 	ServedLastAt string  `json:"served_last_at"`
 	ServedAgent  string  `json:"served_last_agent"`
 	DeniedLastAt string  `json:"denied_last_at"`

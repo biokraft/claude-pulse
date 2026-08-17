@@ -94,6 +94,12 @@ func Render(w io.Writer, r Report) {
 		} else {
 			good("fetched", ageOf(r.Snap.FetchedAt, r.Now))
 		}
+		if r.Snap.QuotaSource != "" {
+			// Which source is feeding the watch decides what a problem here
+			// even means: the statusline cannot be rate limited, so a backoff
+			// only matters while the poll is the one being read.
+			line("source", sourceLabel(r.Snap.QuotaSource))
+		}
 		line("5-hour", fmt.Sprintf("%.0f%%", r.Snap.FiveHourPct))
 		line("7-day", fmt.Sprintf("%.0f%%", r.Snap.SevenDayPct))
 		line("today", fmt.Sprintf("$%.2f, %d tokens", r.Snap.TodayCostUSD, r.Snap.TodayTokens))
@@ -145,6 +151,13 @@ func Render(w io.Writer, r Report) {
 		fmt.Fprintf(w, "  %s•%s %s%s%s\n", p.Rust, p.Reset, p.Cream, s, p.Reset)
 	}
 	fmt.Fprintln(w)
+}
+
+func sourceLabel(src string) string {
+	if src == "statusline" {
+		return "Claude Code statusline (no API poll needed)"
+	}
+	return "Anthropic usage API"
 }
 
 func orDash(s string) string {

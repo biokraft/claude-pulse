@@ -9,13 +9,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/biokraft/claude-pulse/relay/internal/quota"
 	"github.com/biokraft/claude-pulse/relay/internal/store"
 )
 
 func TestIngestAccumulatesDeltas(t *testing.T) {
 	st, _ := store.Open(filepath.Join(t.TempDir(), "t.db"))
 	defer st.Close()
-	h := IngestHandler(st, func() string { return "2026-07-27" }, func() time.Time { return time.Now() })
+	h := IngestHandler(st, nil, func() string { return "2026-07-27" }, func() time.Time { return time.Now() })
 
 	post := func(body string) int {
 		req := httptest.NewRequest("POST", "/ingest/statusline", strings.NewReader(body))
@@ -41,7 +42,7 @@ func TestIngestAccumulatesDeltas(t *testing.T) {
 func TestIngestRejectsBadJSON(t *testing.T) {
 	st, _ := store.Open(filepath.Join(t.TempDir(), "t.db"))
 	defer st.Close()
-	h := IngestHandler(st, func() string { return "2026-07-27" }, func() time.Time { return time.Now() })
+	h := IngestHandler(st, nil, func() string { return "2026-07-27" }, func() time.Time { return time.Now() })
 	req := httptest.NewRequest("POST", "/ingest/statusline", strings.NewReader("{"))
 	rr := httptest.NewRecorder()
 	h.ServeHTTP(rr, req)
@@ -53,7 +54,7 @@ func TestIngestRejectsBadJSON(t *testing.T) {
 func TestIngestReturns500OnStoreFailure(t *testing.T) {
 	dbPath := filepath.Join(t.TempDir(), "t.db")
 	st, _ := store.Open(dbPath)
-	h := IngestHandler(st, func() string { return "2026-07-27" }, func() time.Time { return time.Now() })
+	h := IngestHandler(st, nil, func() string { return "2026-07-27" }, func() time.Time { return time.Now() })
 	st.Close()
 
 	// Post against closed store should return 500
@@ -69,7 +70,7 @@ func TestIngestPrunesIdleSessions(t *testing.T) {
 	st, _ := store.Open(filepath.Join(t.TempDir(), "t.db"))
 	defer st.Close()
 	cur := time.Unix(1_000_000, 0)
-	h := IngestHandler(st, func() string { return "2026-07-28" }, func() time.Time { return cur })
+	h := IngestHandler(st, nil, func() string { return "2026-07-28" }, func() time.Time { return cur })
 
 	post := func(sessionID string, cost float64) {
 		body := fmt.Sprintf(`{"session_id":%q,"cost":{"total_cost_usd":%f},"context_window":{"input_tokens":10,"output_tokens":5}}`, sessionID, cost)
@@ -123,7 +124,7 @@ func TestIngestDoesNotDoubleCountAfterARestart(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	post(IngestHandler(st, day, clock), payload)
+	post(IngestHandler(st, nil, day, clock), payload)
 	if err := st.Close(); err != nil {
 		t.Fatal(err)
 	}
@@ -134,7 +135,7 @@ func TestIngestDoesNotDoubleCountAfterARestart(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer st2.Close()
-	post(IngestHandler(st2, day, clock), payload)
+	post(IngestHandler(st2, nil, day, clock), payload)
 
 	got, err := st2.Daily("2026-07-27", 1)
 	if err != nil {
@@ -157,7 +158,7 @@ func TestIngestReadsTheRealPayloadShape(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer st.Close()
-	h := IngestHandler(st, func() string { return "2026-08-15" }, time.Now)
+	h := IngestHandler(st, nil, func() string { return "2026-08-15" }, time.Now)
 
 	const real = `{
 		"session_id": "abc",
@@ -189,5 +190,89 @@ func TestIngestReadsTheRealPayloadShape(t *testing.T) {
 	}
 	if got[0].CostUSD != 3.5724 {
 		t.Errorf("cost = %v, want 3.5724", got[0].CostUSD)
+	}
+}
+
+// The statusline carries the same quota figures the relay otherwise polls
+// Anthropic for. Harvesting them is what lets the poll stand down, and the
+// poll is the only thing that can be rate limited.
+func TestIngestHarvestsQuotaFromTheStatusline(t *testing.T) {
+	st, err := store.Open(filepath.Join(t.TempDir(), "t.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer st.Close()
+
+	q := quota.New()
+	now := time.Date(2026, 8, 17, 10, 0, 0, 0, time.UTC)
+	h := IngestHandler(st, q, func() string { return "2026-08-17" }, func() time.Time { return now })
+
+	// resets_at is Unix seconds in this payload, unlike the usage endpoint's
+	// RFC 3339 — 2026-08-17T12:00:00Z.
+	const payload = `{
+		"session_id": "abc",
+		"cost": {"total_cost_usd": 1.00},
+		"context_window": {"total_input_tokens": 10, "total_output_tokens": 5},
+		"rate_limits": {
+			"five_hour": {"used_percentage": 35, "resets_at": 1786968000},
+			"seven_day": {"used_percentage": 37, "resets_at": 1787054400}
+		}
+	}`
+	req := httptest.NewRequest("POST", "/ingest/statusline", strings.NewReader(payload))
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+	if rr.Code != http.StatusNoContent {
+		t.Fatalf("code %d", rr.Code)
+	}
+
+	got, ok := q.Current()
+	if !ok {
+		t.Fatal("no quota reading was recorded")
+	}
+	if got.FiveHourPct != 35 || got.SevenDayPct != 37 {
+		t.Errorf("percentages = %v/%v, want 35/37", got.FiveHourPct, got.SevenDayPct)
+	}
+	if got.Source != quota.SourceStatusline {
+		t.Errorf("Source = %q, want %q", got.Source, quota.SourceStatusline)
+	}
+	if !got.At.Equal(now) {
+		t.Errorf("At = %v, want the arrival time %v", got.At, now)
+	}
+	want := time.Unix(1786968000, 0).UTC()
+	if !got.FiveHourResetsAt.Equal(want) {
+		t.Errorf("FiveHourResetsAt = %v, want %v", got.FiveHourResetsAt, want)
+	}
+}
+
+// Older Claude Code versions send no rate_limits at all. A payload without
+// them must still be ingested for cost, and must not record a reading of zero.
+func TestIngestWithoutRateLimitsRecordsNoQuota(t *testing.T) {
+	st, err := store.Open(filepath.Join(t.TempDir(), "t.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer st.Close()
+
+	q := quota.New()
+	h := IngestHandler(st, q, func() string { return "2026-08-17" }, time.Now)
+
+	req := httptest.NewRequest("POST", "/ingest/statusline", strings.NewReader(
+		`{"session_id":"abc","cost":{"total_cost_usd":2.50},
+		  "context_window":{"total_input_tokens":10,"total_output_tokens":5}}`))
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+	if rr.Code != http.StatusNoContent {
+		t.Fatalf("code %d", rr.Code)
+	}
+
+	if _, ok := q.Current(); ok {
+		t.Error("a payload with no rate_limits produced a quota reading")
+	}
+	got, err := st.Daily("2026-08-17", 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got[0].CostUSD != 2.50 {
+		t.Errorf("cost = %v, want 2.50 — cost must still be ingested", got[0].CostUSD)
 	}
 }

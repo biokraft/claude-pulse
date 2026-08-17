@@ -1,0 +1,118 @@
+- generic [ref=f8e4]:
+  - generic [ref=f8e5]:
+    - banner [ref=f8e6]:
+      - link "Garmin Developers" [ref=f8e7] [cursor=pointer]:
+        - /url: /
+    - heading [level=1] [ref=f8e9]:
+      - paragraph [ref=f8e10]:
+        - paragraph [ref=f8e11]: Build Something with Us
+  - generic [ref=f8e12]:
+    - link [ref=f8e14] [cursor=pointer]:
+      - /url: /connect-iq/
+      - heading "Connect IQ™ SDK" [level=2] [ref=f8e16]
+      - paragraph [ref=f8e17]: Develop watch faces, data fields, widgets and apps for our wearable devices.
+    - link [ref=f8e19] [cursor=pointer]:
+      - /url: /gc-developer-program/
+      - heading "Garmin Connect Developer Program" [level=2] [ref=f8e21]
+      - paragraph [ref=f8e22]: Develop custom applications using health and activity data and send training plans and courses to Garmin Devices.
+    - link [ref=f8e24] [cursor=pointer]:
+      - /url: /health-sdk/
+      - heading "Garmin Health SDKs" [level=2] [ref=f8e26]
+      - paragraph [ref=f8e27]: Control, configure, and stream data using Garmin wearables with our SDKs for Android and iOS.
+    - link [ref=f8e29] [cursor=pointer]:
+      - /url: /golf-api/
+      - heading "Garmin Golf API" [level=2] [ref=f8e31]
+      - paragraph [ref=f8e32]: Eliminate manual data collection by accessing key metrics from the Garmin Golf app.
+    - link [ref=f8e34] [cursor=pointer]:
+      - /url: /marine-charts/
+      - heading "Marine Charts and Maps" [level=2] [ref=f8e36]
+      - paragraph [ref=f8e37]:
+        - paragraph [ref=f8e38]:
+          - text: Add detailed Navionics
+          - paragraph [ref=f8e39]: ®
+          - text: charts and maps to your application or website.
+    - link [ref=f8e41] [cursor=pointer]:
+      - /url: /ant-program/
+      - heading "ANT Wireless Networks" [level=2] [ref=f8e43]
+      - paragraph [ref=f8e44]: Wireless connections for sensors and devices for sports, fitness and more.
+    - link [ref=f8e46] [cursor=pointer]:
+      - /url: /fit/
+      - heading "FIT SDK" [level=2] [ref=f8e48]
+      - paragraph [ref=f8e49]: The Flexible and Interoperable Data Transfer (FIT) for the storing and sharing of data.
+    - link [ref=f8e51] [cursor=pointer]:
+      - /url: /datasets/
+      - heading "Digital Map Datasets" [level=2] [ref=f8e53]
+      - paragraph [ref=f8e54]: Unique and compelling map views at various scales and detail levels.
+    - link [ref=f8e56] [cursor=pointer]:
+      - /url: /tacx-trainer/
+      - heading "Tacx Trainer Communication" [level=2] [ref=f8e58]
+      - paragraph [ref=f8e59]: Enable experiences on your platform with Tacx indoor cycling products.
+    - link [ref=f8e61] [cursor=pointer]:
+      - /url: /radar-data-ble/
+      - heading "Garmin Radar Data BLE Program" [level=2] [ref=f8e63]
+      - paragraph [ref=f8e64]: Promote rider safety on your platform with Varia™ radar sensor integration.
+    - link [ref=f8e66] [cursor=pointer]:
+      - /url: /cloud-timing-api/
+      - heading "Cloud Timing API" [level=2] [ref=f8e68]
+      - paragraph [ref=f8e69]: Connect to the MYLAPS cloud-based platform to access real-time timing data for timers and event organizers.
+    - link [ref=f8e71] [cursor=pointer]:
+      - /url: /fleet-management/
+      - heading "Fleet Management" [level=2] [ref=f8e73]
+      - paragraph [ref=f8e74]: Manage your fleet with our Fleet Management Interface, Protocols, and APIs built into select devices.
+    - link [ref=f8e76] [cursor=pointer]:
+      - /url: /open-source/
+      - heading "Open Source" [level=2] [ref=f8e78]
+      - paragraph [ref=f8e79]: See the archives for our Open Source software-based products.
+    - link [ref=f8e81] [cursor=pointer]:
+      - /url: /custom-maps/
+      - heading "Custom Maps" [level=2] [ref=f8e83]
+      - paragraph [ref=f8e84]: Design and build custom maps that can be easily loaded on our devices.
+    - link [ref=f8e86] [cursor=pointer]:
+      - /url: /inreach-portal/
+      - heading [level=2] [ref=f8e88]:
+        - text: inReach
+        - paragraph [ref=f8e89]: ®
+        - text: Portal Connect
+      - paragraph [ref=f8e90]: An API for inReach Professional Customers.
+    - link [ref=f8e92] [cursor=pointer]:
+      - /url: /brand-guidelines/
+      - heading "Garmin Brand Guidelines" [level=2] [ref=f8e94]
+      - paragraph [ref=f8e95]: Developer Guidance for Garmin Branding Integration.
+    - link [ref=f8e97] [cursor=pointer]:
+      - /url: /active-captain/
+      - heading "ActiveCaptain" [level=2] [ref=f8e99]
+      - paragraph [ref=f8e100]: Develop custom applications with access to thousands of markers and details.
+    - link [ref=f8e102] [cursor=pointer]:
+      - /url: /flight-data-log/
+      - heading "Aviation Flight Data Log API" [level=2] [ref=f8e104]
+      - paragraph [ref=f8e105]: Seamless flight data, delivered to your platform.
+  - contentinfo [ref=f8e106]:
+    - list [ref=f8e108]:
+      - listitem [ref=f8e109]:
+        - link [ref=f8e110] [cursor=pointer]:
+          - /url: https://forums.garmin.com/developer/connect-iq/b/news-announcements
+          - paragraph [ref=f8e112]: Developer Blog
+      - listitem [ref=f8e113]:
+        - link [ref=f8e114] [cursor=pointer]:
+          - /url: /brand-guidelines/overview/
+          - paragraph [ref=f8e116]: Garmin Brand Guidelines
+      - listitem [ref=f8e117]:
+        - link [ref=f8e118] [cursor=pointer]:
+          - /url: https://www.garmin.com/en-US/forms/developercontactus/
+          - paragraph [ref=f8e120]: Contact
+      - listitem [ref=f8e121]:
+        - link [ref=f8e122] [cursor=pointer]:
+          - /url: https://forums.garmin.com/developer/
+          - paragraph [ref=f8e124]: Developer Forum
+    - generic [ref=f8e125]:
+      - list [ref=f8e126]:
+        - listitem [ref=f8e127]: ©2026 Garmin LTD or Its Subsidiaries•
+        - listitem [ref=f8e128]:
+          - link "Terms of Use" [ref=f8e129] [cursor=pointer]:
+            - /url: https://www.garmin.com/en-US/legal/terms-of-use/
+          - text: •
+        - listitem [ref=f8e130]:
+          - link "Privacy" [ref=f8e131] [cursor=pointer]:
+            - /url: http://www.garmin.com/privacy
+      - link "Garmin" [ref=f8e132] [cursor=pointer]:
+        - /url: //www.garmin.com

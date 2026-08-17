@@ -41,16 +41,18 @@ Required whenever anything under `watch/` changes. The store rejects a version n
 has already seen, so this number only ever goes up.
 
 ```bash
-# 1. Bump the version in watch/manifest.xml, then export
-export JAVA_HOME=/opt/homebrew/opt/openjdk
-SDK="$(ls -d "$HOME/Library/Application Support/Garmin/ConnectIQ/Sdks"/*/bin | tail -1)"
-"$SDK/monkeyc" -e -f watch/monkey.jungle -o build/ClaudePulse-<version>.iq \
-  -y developer_key.der -r
-
-# 2. Upload build/ClaudePulse-<version>.iq at https://apps.garmin.com/ as that version
+scripts/release-watch.sh 1.0.4          # bump, export to build/, verify
+scripts/release-watch.sh --beta 1.0.4   # a beta build, under its own app id
 ```
 
-Write the export to `build/`, never `dist/` — goreleaser deletes `dist/` on every run.
+Then upload it: dashboard → the **existing** app → **Upload New Version**. Never "Add
+Beta App" for a release, and never a beta upload carrying the production app id —
+[docs/garmin-release.md](docs/garmin-release.md) explains why that one is hard to undo.
+
+There is no way to automate the upload itself: Garmin publishes no store API, no
+community tool exists, and scripting the dashboard runs into their Terms of Use. The
+research behind that conclusion, with sources, is in
+[docs/garmin-release.md](docs/garmin-release.md).
 
 The relay and the watch app carry **different version numbers on purpose**. They are
 separate artifacts on separate release cadences, and the watch app's numbering is

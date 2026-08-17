@@ -1,0 +1,272 @@
+- generic [ref=e4]:
+  - generic [ref=e5]:
+    - banner [ref=e6]:
+      - link "Garmin Developers" [ref=e7] [cursor=pointer]:
+        - /url: /
+    - heading [level=1] [ref=e11]
+  - generic [ref=e13]:
+    - list [ref=e15]:
+      - listitem [ref=e16]:
+        - link "Overview" [ref=e17] [cursor=pointer]:
+          - /url: /connect-iq/overview/
+      - listitem [ref=e18]:
+        - list
+      - listitem [ref=e19]:
+        - link "Compatible Devices" [ref=e20] [cursor=pointer]:
+          - /url: /connect-iq/compatible-devices/
+      - listitem [ref=e21]:
+        - list
+      - listitem [ref=e22]:
+        - link "API Docs" [ref=e23] [cursor=pointer]:
+          - /url: /connect-iq/api-docs/
+      - listitem [ref=e24]:
+        - list
+      - listitem [ref=e25]:
+        - link "Get the SDK" [ref=e26] [cursor=pointer]:
+          - /url: /connect-iq/sdk/
+      - listitem [ref=e27]:
+        - list
+      - listitem [ref=e28]:
+        - link "Submit an App" [ref=e29] [cursor=pointer]:
+          - /url: /connect-iq/submit-an-app/
+      - listitem [ref=e30]:
+        - list
+      - listitem [ref=e31]:
+        - link "Stay Informed" [ref=e32] [cursor=pointer]:
+          - /url: /connect-iq/stay-informed/
+      - listitem [ref=e33]:
+        - list
+      - listitem [ref=e34]:
+        - link "Connect IQ Basics" [ref=e35] [cursor=pointer]:
+          - /url: /connect-iq/connect-iq-basics/
+      - listitem [ref=e36]:
+        - list
+      - listitem [ref=e37]:
+        - link "Monkey C" [ref=e38] [cursor=pointer]:
+          - /url: /connect-iq/monkey-c/
+      - listitem [ref=e39]:
+        - list
+      - listitem [ref=e40]:
+        - link "Core Topics" [ref=e41] [cursor=pointer]:
+          - /url: /connect-iq/core-topics/
+      - listitem [ref=e42]:
+        - list [ref=e43]:
+          - listitem [ref=e44]:
+            - link "Manifest and Permissions" [ref=e45] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/manifest-and-permissions/
+          - listitem [ref=e46]:
+            - link "Application and System Modules" [ref=e47] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/application-and-system-modules/
+          - listitem [ref=e48]:
+            - link "Persisting Data" [ref=e49] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/persisting-data/
+          - listitem [ref=e50]:
+            - link "Backgrounding" [ref=e51] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/backgrounding/
+          - listitem [ref=e52]:
+            - link "Glances" [ref=e53] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/glances/
+          - listitem [ref=e54]:
+            - link "Properties and App Settings" [ref=e55] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/properties-and-app-settings/
+          - listitem [ref=e56]:
+            - link "Intents" [ref=e57] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/intents/
+          - listitem [ref=e58]:
+            - link "Notifications" [ref=e59] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/notifications/
+          - listitem [ref=e60]:
+            - link "Build Configuration" [ref=e61] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/build-configuration/
+          - listitem [ref=e62]:
+            - link "Security" [ref=e63] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/security/
+          - listitem [ref=e64]:
+            - link "User Interface" [ref=e65] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/user-interface/
+          - listitem [ref=e66]:
+            - link "Layouts" [ref=e67] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/layouts/
+          - listitem [ref=e68]:
+            - link "Graphics" [ref=e69] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/graphics/
+          - listitem [ref=e70]:
+            - link "Input Handling" [ref=e71] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/input-handling/
+          - listitem [ref=e72]:
+            - link "Native Controls" [ref=e73] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/native-controls/
+          - listitem [ref=e74]:
+            - link "Resources" [ref=e75] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/resources/
+          - listitem [ref=e76]:
+            - link "Monkey Style" [ref=e77] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/monkey-style/
+          - listitem [ref=e78]:
+            - link "Getting the Users Attention" [ref=e79] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/getting-the-users-attention/
+          - listitem [ref=e80]:
+            - link "Editing Watch Faces On Device" [ref=e81] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/editing-watch-faces-on-device/
+          - listitem [ref=e82]:
+            - link "HTTPS" [ref=e83] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/https/
+          - listitem [ref=e84]:
+            - link "Authenticated Web Services" [ref=e85] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/authenticated-web-services/
+          - listitem [ref=e86]:
+            - link "Communicating with Mobile Apps" [ref=e87] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/communicating-with-mobile-apps/
+          - listitem [ref=e88]:
+            - link "Downloading Content" [ref=e89] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/downloading-content/
+          - listitem [ref=e90]:
+            - link "Mobile SDK for Android" [ref=e91] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/mobile-sdk-for-android/
+          - listitem [ref=e92]:
+            - link "Mobile SDK for iOS" [ref=e93] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/mobile-sdk-for-ios/
+          - listitem [ref=e94]:
+            - link "Ant and Ant Plus" [ref=e95] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/ant-and-ant-plus/
+          - listitem [ref=e96]:
+            - link "Bluetooth Low Energy" [ref=e97] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/bluetooth-low-energy/
+          - listitem [ref=e98]:
+            - link "Pairing Wireless Devices" [ref=e99] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/pairing-wireless-devices/
+          - listitem [ref=e100]:
+            - link "Sensors" [ref=e101] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/sensors/
+          - listitem [ref=e102]:
+            - link "Positioning" [ref=e103] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/positioning/
+          - listitem [ref=e104]:
+            - link "Activity Recording" [ref=e105] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/activity-recording/
+          - listitem [ref=e106]:
+            - link "Activity Control" [ref=e107] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/activity-control/
+          - listitem [ref=e108]:
+            - link "Activity Prompts" [ref=e109] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/activity-prompts/
+          - listitem [ref=e110]:
+            - link "Quantifying the User" [ref=e111] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/quantifying-the-user/
+          - listitem [ref=e112]:
+            - link "Complications" [ref=e113] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/complications/
+          - listitem [ref=e114]:
+            - link "Shareable Libraries" [ref=e115] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/shareable-libraries/
+          - listitem [ref=e116]:
+            - link "Debugging" [ref=e117] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/debugging/
+          - listitem [ref=e118]:
+            - link "Unit Testing" [ref=e119] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/unit-testing/
+          - listitem [ref=e120]:
+            - link "Exception Reporting Tool" [ref=e121] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/exception-reporting-tool/
+          - listitem [ref=e122]:
+            - link "Profiling" [ref=e123] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/profiling/
+          - listitem [ref=e124]:
+            - link "Publishing to the Store" [ref=e125] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/publishing-to-the-store/
+          - listitem [ref=e126]:
+            - link "Beta Apps" [ref=e127] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/beta-apps/
+          - listitem [ref=e128]:
+            - link "Trial Apps" [ref=e129] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/trial-apps/
+          - listitem [ref=e130]:
+            - link "Requesting Reviews" [ref=e131] [cursor=pointer]:
+              - /url: /connect-iq/core-topics/requesting-reviews/
+      - listitem [ref=e132]:
+        - link "User Experience Guidelines" [ref=e133] [cursor=pointer]:
+          - /url: /connect-iq/user-experience-guidelines/
+      - listitem [ref=e134]:
+        - list
+      - listitem [ref=e135]:
+        - link "Personality Library" [ref=e136] [cursor=pointer]:
+          - /url: /connect-iq/personality-library/
+      - listitem [ref=e137]:
+        - list
+      - listitem [ref=e138]:
+        - link "Connect IQ FAQ" [ref=e139] [cursor=pointer]:
+          - /url: /connect-iq/connect-iq-faq/
+      - listitem [ref=e140]:
+        - list
+      - listitem [ref=e141]:
+        - link "Reference Guides" [ref=e142] [cursor=pointer]:
+          - /url: /connect-iq/reference-guides/
+      - listitem [ref=e143]:
+        - list
+      - listitem [ref=e144]:
+        - link "App Review Guidelines" [ref=e145] [cursor=pointer]:
+          - /url: /connect-iq/app-review-guidelines/
+      - listitem [ref=e146]:
+        - list
+      - listitem [ref=e147]:
+        - link "Monetization" [ref=e148] [cursor=pointer]:
+          - /url: /connect-iq/monetization/
+      - listitem [ref=e149]:
+        - list
+      - listitem [ref=e150]:
+        - link "Device Reference" [ref=e151] [cursor=pointer]:
+          - /url: /connect-iq/device-reference/
+      - listitem [ref=e152]:
+        - list
+    - main [ref=e156]:
+      - article [ref=e157]:
+        - heading "Beta Apps" [level=1] [ref=e158]
+        - generic [ref=e159]:
+          - figure [ref=e160]
+          - paragraph [ref=e162]: Connect IQ beta apps allows developers to test app settings and Garmin Connect integration in production without releasing the app.
+          - paragraph [ref=e163]:
+            - text: Uploading a beta app will let you stage your app in production. To use this feature, you will need to create an alternate app id in your manifest using a
+            - link "UUID creator" [ref=e164] [cursor=pointer]:
+              - /url: https://www.uuidgenerator.net/
+            - text: . Beta apps will show up in your uploaded apps, and you can download them to your Garmin device. Once downloaded you can edit app settings in Garmin Connect and Garmin Express and test your developer fields in Garmin Connect. After you upload the beta app, you can update the beta version as many times as you want. When you are ready to release the app, change the app id to your production version in the manifest and upload it without checking the "Beta App" checkbox. Note that the app will have a separate store identifier from your final app, and URLs to the beta will not be visible outside of your account.
+  - contentinfo [ref=e165]:
+    - list [ref=e167]:
+      - listitem [ref=e168]:
+        - link [ref=e169] [cursor=pointer]:
+          - /url: https://forums.garmin.com/developer/connect-iq/b/news-announcements
+          - paragraph [ref=e171]: Developer Blog
+      - listitem [ref=e172]:
+        - link [ref=e173] [cursor=pointer]:
+          - /url: /brand-guidelines/overview/
+          - paragraph [ref=e175]: Garmin Brand Guidelines
+      - listitem [ref=e176]:
+        - link [ref=e177] [cursor=pointer]:
+          - /url: https://www.garmin.com/en-US/forms/developercontactus/
+          - paragraph [ref=e179]: Contact
+      - listitem [ref=e180]:
+        - link [ref=e181] [cursor=pointer]:
+          - /url: https://forums.garmin.com/developer/
+          - paragraph [ref=e183]: Developer Forum
+    - generic [ref=e184]:
+      - list [ref=e185]:
+        - listitem [ref=e186]: ©2026 Garmin LTD or Its Subsidiaries•
+        - listitem [ref=e187]:
+          - link "Terms of Use" [ref=e188] [cursor=pointer]:
+            - /url: https://www.garmin.com/en-US/legal/terms-of-use/
+          - text: •
+        - listitem [ref=e189]:
+          - link "Privacy" [ref=e190] [cursor=pointer]:
+            - /url: http://www.garmin.com/privacy
+      - link "Garmin" [ref=e191] [cursor=pointer]:
+        - /url: //www.garmin.com
+      - generic [ref=e192]:
+        - complementary "Open Cookie Preferences Modal" [ref=e193]:
+          - link "Cookie Preferences, opens a dedicated popup modal window" [ref=e194] [cursor=pointer]: Cookie Preferences
+        - generic [ref=e197]:
+          - generic [ref=e198]: This site uses cookies and related technologies for site operation, analytics, and third party advertising purposes. You may choose to consent to our use of these technologies, reject non-essential technologies, or further manage your preferences.
+          - generic [ref=e199]:
+            - link "Privacy Policy" [ref=e200] [cursor=pointer]:
+              - /url: https://www.garmin.com/privacy/cookies/policy/
+            - button "Accept" [ref=e201] [cursor=pointer]
+            - button "Decline" [ref=e202] [cursor=pointer]
+            - button "Manage Settings" [ref=e203] [cursor=pointer]

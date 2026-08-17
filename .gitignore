@@ -22,3 +22,7 @@ PRD.md
 # EXIT trap, but a SIGKILL (or a crashed simulator) skips the trap and would
 # otherwise leave fake seed data staged for commit.
 watch/source/_ScreenshotSeed.mc
+
+# Beta Connect IQ app id. Machine-local: a second 32-char hex id in a tracked
+# file trips scripts/check-no-leaks.sh, and only the owner publishes betas.
+watch/.beta-app-id

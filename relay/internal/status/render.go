@@ -105,7 +105,13 @@ func Render(w io.Writer, r Report) {
 		line("today", fmt.Sprintf("$%.2f, %d tokens", r.Snap.TodayCostUSD, r.Snap.TodayTokens))
 		line("sessions", fmt.Sprintf("%d active", r.Snap.ActiveCount))
 	}
-	if !r.NextPoll.IsZero() {
+	// While the statusline is feeding the relay, the poll is deliberately not
+	// running. Reporting its schedule then — especially a backoff left over
+	// from before — reads as a fault when nothing is wrong.
+	live := r.Snap != nil && r.Snap.QuotaSource == "statusline"
+	if live {
+		line("next poll", "suspended — not needed while the statusline is live")
+	} else if !r.NextPoll.IsZero() {
 		d := r.NextPoll.Sub(r.Now)
 		switch {
 		case d <= 0:

@@ -181,6 +181,11 @@ background permanently.
 **The cost page shows $0.** Expected until you run `claude-pulse-relay hook install`;
 cost comes from a Claude Code statusline hook, not the usage API.
 
+**Quota numbers look out of date.** While Claude Code is running they come from
+its statusline and update instantly. Once it stops, the relay falls back to
+polling Anthropic every five minutes. `claude-pulse-relay status` names the
+source it is currently using.
+
 **Everything reads `--` or the app looks frozen.** The relay has never completed a poll.
 `status` shows this as `fetched: never`, and reports a raised poll interval when
 Anthropic has rate-limited the relay — in that case the fix is to wait. Otherwise read

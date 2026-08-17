@@ -87,6 +87,22 @@ claude-pulse-relay service uninstall
 
 Stops and removes the installed service.
 
+## Where the quota numbers come from
+
+Two sources, and the relay serves whichever reported last.
+
+The **Claude Code statusline** carries the quota figures in every payload it
+sends. They arrive the moment they change, cost no API call, and cannot be rate
+limited — so while Claude Code is running, the relay does not poll at all.
+
+The **Anthropic usage endpoint** covers the rest of the time. Nothing is emitted
+when Claude Code is not running, and the quota still moves overnight as windows
+reset, so the poll remains the source of record when the statusline goes quiet.
+
+`status` reports which one served the current reading. This matters because a
+rate-limit backoff — historically the reason the watch showed zeros — only
+affects the poll.
+
 ## Checking on it
 
 ```bash

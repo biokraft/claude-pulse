@@ -128,3 +128,32 @@ func TestRenderReportsCostFromWhatArrived(t *testing.T) {
 		t.Errorf("want cost reported as never received, got:\n%s", out)
 	}
 }
+
+// A suspended poll is the intended state once the statusline is feeding the
+// relay; showing its schedule, or a leftover backoff, reads as a fault.
+func TestRenderSuppressesThePollScheduleWhenTheStatuslineIsLive(t *testing.T) {
+	now := time.Date(2026, 8, 17, 12, 0, 0, 0, time.UTC)
+	base := Report{
+		Now: now, LocalUp: true, TokenLen: 32, NoTunnel: true,
+		NextPoll: now.Add(3 * time.Minute), PollInterval: 40 * time.Minute,
+	}
+
+	live := base
+	live.Snap = &Snapshot{QuotaSource: "statusline",
+		FetchedAt: now.Add(-time.Second).Format(time.RFC3339)}
+	out := renderTo(live)
+	if !strings.Contains(out, "suspended") {
+		t.Errorf("want the poll reported as suspended, got:\n%s", out)
+	}
+	if strings.Contains(out, "backing off") {
+		t.Errorf("reported a backoff that no longer applies:\n%s", out)
+	}
+
+	// With the poll back in charge, its schedule matters again.
+	polling := base
+	polling.Snap = &Snapshot{QuotaSource: "anthropic",
+		FetchedAt: now.Add(-time.Minute).Format(time.RFC3339)}
+	if out := renderTo(polling); !strings.Contains(out, "backing off") {
+		t.Errorf("want the backoff reported while polling, got:\n%s", out)
+	}
+}

@@ -128,5 +128,12 @@ a brand-new submission and the one for an update look nearly identical — both 
 file, a version, and show the *Beta App* checkbox — so it is easy to be on the wrong one.
 
 Go to the dashboard, open the **existing** listing, and use **Upload New Version** there.
-Do not generate a fresh id to get past the error: that publishes a second, unrelated
-listing, and existing users stay on the old one forever.
+Do not generate a fresh id to get past the error once a listing is public: that
+publishes a second, unrelated listing, and existing users stay on the old one forever.
+
+Before anything is public, a rotation is safe and is sometimes the only way out. That
+happened here: the first id was claimed by a beta record, so Garmin refused it for the
+public submission. The id moved to `watch/.beta-app-id`, where it correctly names the
+record that owns it, and the manifest took a new one. `scripts/check-no-leaks.sh` reads
+the allowed id from the manifest rather than hardcoding it, so a rotation does not read
+as a leaked secret.

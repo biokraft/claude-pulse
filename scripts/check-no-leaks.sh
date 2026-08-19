@@ -50,13 +50,20 @@ hits="$(git ls-files -z \
   || true)"
 report "$hits" "looks like a real home directory path (use \$HOME or ~ instead)"
 
-# --- stray 32-hex-char ids (excluding the known Connect IQ app id) ----------
+# --- stray 32-hex-char ids (excluding the Connect IQ app id) ----------------
+# The app id is read from the manifest rather than written here: it is public
+# by definition (every store URL contains it), and hardcoding it means a
+# rotated id fails this check as a leak while the stale one stays allowed.
+app_id="$(sed -n 's/.*<iq:application[^>]*id="\([a-f0-9]\{32\}\)".*/\1/p' \
+  "$(git rev-parse --show-toplevel)/watch/manifest.xml" | head -1)"
+[ -n "$app_id" ] || { echo "could not read the app id from watch/manifest.xml" >&2; exit 1; }
+
 # go.sum (long hex-ish hashes) and *.png (binary) are excluded via pathspec,
 # not piped through another rg -z stage, so the null-separated file list from
 # git ls-files never gets re-split and handed to xargs mangled.
 hits="$(git ls-files -z -- . ':!go.sum' ':!*.png' \
   | xargs -0 rg -n '\b[a-f0-9]{32}\b' --no-heading -- \
-  | rg -v '7b8412b82d8c462d83944a37b183c471' \
+  | rg -v "$app_id" \
   || true)"
 report "$hits" "looks like a stray 32-char hex id (secret/token/hash?)"
 

@@ -26,3 +26,8 @@ watch/source/_ScreenshotSeed.mc
 # Beta Connect IQ app id. Machine-local: a second 32-char hex id in a tracked
 # file trips scripts/check-no-leaks.sh, and only the owner publishes betas.
 watch/.beta-app-id
+watch/.dev-app-id
+
+# Playwright MCP session dumps (page snapshots, console logs) — scratch, and
+# they carry third-party URLs and ids.
+.playwright-mcp/

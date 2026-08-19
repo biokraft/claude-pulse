@@ -93,3 +93,40 @@ untracked — a second 32-character hex id in a tracked file would trip
 trap on `EXIT INT TERM HUP` restores the manifest afterwards. The signal list matters:
 bash does not run an `EXIT` trap when killed by an untrapped signal, so without it a
 Ctrl-C during the two-minute export would leave the beta id in the working tree.
+
+## Running a development build alongside the store one
+
+The app id is the identity of an installation. A sideloaded build carrying the
+production id is the *same app* to the watch and to Garmin Express, so it replaces the
+store install — and re-installing from the store then replaces it back. Two copies need
+two ids.
+
+```bash
+scripts/build-dev.sh                      # .prg for the default device
+scripts/build-dev.sh fenix8solar47mm      # some other device
+INSTALL=1 scripts/build-dev.sh            # also copy it to a mounted watch
+```
+
+It swaps in an untracked id from `watch/.dev-app-id` and renames the app to `Pulse Dev`
+for the compile only, then restores both files — same trap discipline as `--beta`. Keep
+that file: a new id makes the watch treat the next build as a different app, losing its
+stored pairing.
+
+Three ids, three purposes, and they must never be interchanged:
+
+| id | Lives in | Used for |
+| --- | --- | --- |
+| production | `watch/manifest.xml`, tracked | The public store listing. |
+| beta | `watch/.beta-app-id`, untracked | Beta store records (`--beta`). |
+| dev | `watch/.dev-app-id`, untracked | Sideloads and the simulator. |
+
+## "The manifest app ID is already in use by another app"
+
+The store shows this when a package whose id is already registered is submitted through
+**Add New App** rather than as a new version of the app that owns it. The upload form for
+a brand-new submission and the one for an update look nearly identical — both ask for a
+file, a version, and show the *Beta App* checkbox — so it is easy to be on the wrong one.
+
+Go to the dashboard, open the **existing** listing, and use **Upload New Version** there.
+Do not generate a fresh id to get past the error: that publishes a second, unrelated
+listing, and existing users stay on the old one forever.

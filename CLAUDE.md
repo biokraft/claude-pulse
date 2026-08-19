@@ -16,6 +16,9 @@ SDK="$(ls -d "$HOME/Library/Application Support/Garmin/ConnectIQ/Sdks"/*/bin | t
 # Dev build for one device (sideload / simulator)
 "$SDK/monkeyc" -f watch/monkey.jungle -d fr57047mm -o /tmp/ClaudePulse.prg -y developer_key.der
 
+# Sideloadable dev build under its own app id, installs next to the store app
+scripts/build-dev.sh fr57047mm
+
 # Unit tests
 "$SDK/monkeyc" --unit-test -f watch/monkey.jungle -d fr57047mm -o /tmp/t.prg -y developer_key.der
 "$SDK/monkeydo" /tmp/t.prg fr57047mm -t

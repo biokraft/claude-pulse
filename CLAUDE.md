@@ -180,8 +180,15 @@ short version:
 
 ## Store
 
-Submission needs the `.iq` export, the store assets under
-`design/store-assets/`,
-and `watch/manifest.xml`'s device list (current-gen smartwatches only — no Edge,
-handheld, or aviation products). Anthropic has not yet been asked for permission to use
-the Claude name and mascot; that is still open before the listing goes public.
+The app is **published**, as
+[Claude Pulse](https://apps.garmin.com/apps/366c5488-cd20-4299-b498-8c5cff30bcba)
+(1.1.0, approved 2026-08-19). Every later release is an *Upload New Version* against
+that listing, never a new one — see [RELEASING.md](RELEASING.md).
+
+A submission needs the `.iq` export, the store assets under
+`design/store-assets/`, and `watch/manifest.xml`'s device list (current-gen smartwatches
+only — no Edge, handheld, or aviation products).
+
+Anthropic has still not been asked for permission to use the Claude name and mascot.
+That was an open question before the listing went public and it remains one now that it
+has; nothing about approval by Garmin speaks to it.

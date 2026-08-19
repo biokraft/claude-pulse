@@ -138,6 +138,10 @@ record that owns it, and the manifest took a new one. `scripts/check-no-leaks.sh
 the allowed id from the manifest rather than hardcoding it, so a rotation does not read
 as a leaked secret.
 
+That window is now closed: 1.1.0 was approved and published on 2026-08-19, so the
+manifest id is permanent. Rotating it from here would orphan every installed user on a
+listing that no longer receives updates.
+
 ## The store URL id is not the manifest app id
 
 The published listing lives at

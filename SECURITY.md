@@ -6,7 +6,7 @@ Please do not open a public issue for security problems.
 
 Report privately through
 [GitHub Security Advisories](https://github.com/biokraft/claude-pulse/security/advisories/new),
-or by email to hello@fernglas.io. Include what you found, how to reproduce it, and what an
+or by email to sean.baufeld@protonmail.com. Include what you found, how to reproduce it, and what an
 attacker could do with it.
 
 Expect an acknowledgement within a few days. This is a spare-time project, so fixes are

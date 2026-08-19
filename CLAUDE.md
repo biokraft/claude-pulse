@@ -180,10 +180,25 @@ short version:
 
 ## Store
 
-The app is **published**, as
+The listing exists as
 [Claude Pulse](https://apps.garmin.com/apps/366c5488-cd20-4299-b498-8c5cff30bcba)
-(1.1.0, approved 2026-08-19). Every later release is an *Upload New Version* against
-that listing, never a new one — see [RELEASING.md](RELEASING.md).
+(1.1.0, approved by review on 2026-08-19) but is **not currently served**. The store's
+API answers that app id with `410 Gone` and
+`"The requested app has been removed from the store due to DSA"` — the EU Digital
+Services Act trader declaration is outstanding on the developer account, which hides its
+apps regardless of review status. An unknown app id answers `404` on the same endpoint,
+so the `410` confirms the record is real and deliberately withheld:
+
+```bash
+curl -s https://apps.garmin.com/api/appsLibraryExternalServices/api/asw/apps/<app-id>
+```
+
+The web page itself is no help here — it renders client-side and returns an empty shell
+either way. Use the API when a listing's status is in question.
+
+The record is owned by the developer account that submitted it. Every later release is an
+*Upload New Version* against that listing, never a new one — see
+[RELEASING.md](RELEASING.md).
 
 A submission needs the `.iq` export, the store assets under
 `design/store-assets/`, and `watch/manifest.xml`'s device list (current-gen smartwatches

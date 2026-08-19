@@ -10,7 +10,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Go 1.25+](https://img.shields.io/badge/Go-1.25%2B-00ADD8?logo=go&logoColor=white)](relay/go.mod)
 [![Release](https://img.shields.io/github/v/release/biokraft/claude-pulse?sort=semver)](https://github.com/biokraft/claude-pulse/releases/latest)
-[![Connect IQ](https://img.shields.io/badge/Connect%20IQ-70%20devices-007CC3)](watch/manifest.xml)
+[![Connect IQ Store](https://img.shields.io/badge/Connect%20IQ%20Store-Claude%20Pulse-007CC3?logo=garmin&logoColor=white)](https://apps.garmin.com/apps/366c5488-cd20-4299-b498-8c5cff30bcba)
+[![Devices](https://img.shields.io/badge/devices-70-007CC3)](watch/manifest.xml)
 
 </div>
 
@@ -93,7 +94,8 @@ keep running to poll Anthropic and answer the watch. `Ctrl-C` shuts it down clea
 data loss), but the watch stops updating until you start it again. Step 4 gets it out of
 your terminal for good.
 
-**3. Install the watch app** from the Connect IQ Store, then scan the QR code with your
+**3. Install the watch app** from the
+[Connect IQ Store](https://apps.garmin.com/apps/366c5488-cd20-4299-b498-8c5cff30bcba), then scan the QR code with your
 phone. That opens a pairing page with the URL and token and a copy button for each —
 paste both into **Garmin Connect → Connect IQ apps → Claude Pulse → Settings**.
 

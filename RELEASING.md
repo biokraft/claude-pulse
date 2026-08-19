@@ -45,7 +45,9 @@ scripts/release-watch.sh 1.0.4          # bump, export to build/, verify
 scripts/release-watch.sh --beta 1.0.4   # a beta build, under its own app id
 ```
 
-Then upload it: dashboard → the **existing** app → **Upload New Version**. Never "Add
+Then upload it: dashboard → the
+[**existing** app](https://apps.garmin.com/apps/366c5488-cd20-4299-b498-8c5cff30bcba) →
+**Upload New Version**. Never "Add
 Beta App" for a release, and never a beta upload carrying the production app id —
 [docs/garmin-release.md](docs/garmin-release.md) explains why that one is hard to undo.
 

@@ -137,3 +137,12 @@ public submission. The id moved to `watch/.beta-app-id`, where it correctly name
 record that owns it, and the manifest took a new one. `scripts/check-no-leaks.sh` reads
 the allowed id from the manifest rather than hardcoding it, so a rotation does not read
 as a leaked secret.
+
+## The store URL id is not the manifest app id
+
+The published listing lives at
+<https://apps.garmin.com/apps/366c5488-cd20-4299-b498-8c5cff30bcba>, while the manifest
+carries `b84a11dede4d433b98124e51b43fd0b1`. They are different identifiers and both are
+real: the manifest id is what the device and the upload form match against, and the store
+mints its own id for the listing's public URL. Do not "fix" one to look like the other —
+putting the store's URL id into the manifest breaks the next upload.

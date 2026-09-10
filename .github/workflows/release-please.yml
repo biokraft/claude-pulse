@@ -24,7 +24,7 @@ jobs:
       # entirely rather than half-working.
       RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
     steps:
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@v5
         if: env.RELEASE_TOKEN != ''
         with:
           token: ${{ secrets.RELEASE_TOKEN }}

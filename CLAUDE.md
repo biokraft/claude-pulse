@@ -116,8 +116,6 @@ the simulator resists automation, and each workaround in it was needed:
   create a venv, `pip install pyobjc-framework-Quartz`, and pass it as
   `PYTHON=/path/to/venv/bin/python scripts/shoot-pages.sh`.
 
-Playwright cannot help here — it drives browsers, and the simulator is a native app.
-
 ## Store assets
 
 `scripts/build-store-assets.py` turns the raw window captures into the whole upload
